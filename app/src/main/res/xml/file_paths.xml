@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Narrow scope; never expose the whole SD card or the app database. -->
+    <external-path name="legacy_downloads" path="Download/3Esnap/" />
+</paths>

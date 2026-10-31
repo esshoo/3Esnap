@@ -1,48 +1,61 @@
-plugins {
-    id 'com.android.application'
-}
+plugins { id 'com.android.application' }
+
+def signingFile = System.getenv('KEYSTORE_FILE')
+def hasReleaseKey = signingFile != null && !signingFile.isBlank()
+def buildNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '0').toInteger()
 
 android {
+    // Keep the original Java namespace to make this update non-destructive.
     namespace 'com.snapclean.app'
-    compileSdk 34
-
+    compileSdk 35
     defaultConfig {
-        applicationId "com.snapclean.app"
+        applicationId 'com.threee.snap'
         minSdk 24
-        targetSdk 34
-        versionCode 1
-        versionName "1.0.0"
-
-        ndk {
-            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+        targetSdk 35
+        versionCode 20000 + buildNumber
+        versionName '2.0.0'
+    }
+    signingConfigs {
+        if (hasReleaseKey) {
+            release {
+                storeFile file(signingFile)
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEY_PASSWORD')
+            }
         }
     }
-
     buildTypes {
+        debug { applicationIdSuffix '.debug' }
         release {
             minifyEnabled false
+            if (hasReleaseKey) signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-    
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+            universalApk true
+        }
+    }
+    buildFeatures { buildConfig true }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-
-    packaging {
-        jniLibs {
-            useLegacyPackaging = true
-        }
-    }
+    // The bundled Python / FFmpeg executables require extracted native libraries.
+    packaging { jniLibs { useLegacyPackaging = true } }
+    lint { abortOnError true }
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.11.0'
-    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
-    
-    // On-device standalone video downloading engine (Seal / YTDLnis core)
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.core:core:1.15.0'
+    implementation 'androidx.webkit:webkit:1.12.1'
     implementation 'io.github.junkfood02.youtubedl-android:library:0.18.1'
     implementation 'io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1'
+    testImplementation 'junit:junit:4.13.2'
 }

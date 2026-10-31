@@ -1,37 +1,4 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <!-- Dark Gradient Circle / Rounded Background -->
-    <path
-        android:fillColor="#0a0e17"
-        android:pathData="M0,0h108v108h-108z" />
-    <path
-        android:fillColor="#1e1b4b"
-        android:pathData="M54,8 C79.4,8 100,28.6 100,54 C100,79.4 79.4,100 54,100 C28.6,100 8,79.4 8,54 C8,28.6 28.6,8 54,8 Z" />
-    <!-- Gradient accent circle ring -->
-    <path
-        android:strokeColor="#6366f1"
-        android:strokeWidth="3"
-        android:pathData="M54,14 C76.1,14 94,31.9 94,54 C94,76.1 76.1,94 54,94 C31.9,94 14,76.1 14,54 C14,31.9 31.9,14 54,14 Z" />
-    <!-- Download Arrow pointing into folder / tray -->
-    <!-- Down Arrow Stem -->
-    <path
-        android:fillColor="#a855f7"
-        android:pathData="M51,26 L57,26 L57,50 L51,50 Z" />
-    <!-- Down Arrow Head -->
-    <path
-        android:fillColor="#ec4899"
-        android:pathData="M42,48 L54,64 L66,48 Z" />
-    <!-- File / Tray Base -->
-    <path
-        android:fillColor="#6366f1"
-        android:pathData="M32,68 L76,68 L76,74 C76,76.2 74.2,78 72,78 L36,78 C33.8,78 32,76.2 32,74 Z" />
-    <path
-        android:fillColor="#818cf8"
-        android:pathData="M28,60 L34,60 L34,70 L28,70 Z" />
-    <path
-        android:fillColor="#818cf8"
-        android:pathData="M74,60 L80,60 L80,70 L74,70 Z" />
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFF" android:pathData="M11,3h2v10l3,-3 1.4,1.4L12,17l-5.4,-5.6L8,10l3,3zM5,19h14v2H5z" />
 </vector>

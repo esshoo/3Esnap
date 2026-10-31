@@ -1,0 +1,21 @@
+.gradle/
+**/build/
+local.properties
+.idea/
+*.iml
+*.jks
+*.keystore
+keystore.properties
+.env
+.DS_Store
+captures/
+*.apk
+*.aab
+!gradle/wrapper/gradle-wrapper.jar
+__pycache__/
+.test-output/
+dist/
+
+# Local Python test caches
+__pycache__/
+*.py[cod]

@@ -1,527 +1,255 @@
 package com.snapclean.app;
 
-import android.app.Activity;
-import android.app.DownloadManager;
+import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
-import android.os.Environment;
-import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
-import android.widget.Toast;
-
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import com.yausername.youtubedl_android.YoutubeDL;
 import com.yausername.youtubedl_android.YoutubeDLRequest;
-import com.yausername.youtubedl_android.YoutubeDLResponse;
 import com.yausername.youtubedl_android.mapper.VideoFormat;
 import com.yausername.youtubedl_android.mapper.VideoInfo;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import java.io.File;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class NativeBridge {
-
-    private static final String TAG = "NativeBridge";
-    private final Activity activity;
-    private final WebView webView;
-    private final ExecutorService executor = Executors.newFixedThreadPool(2);
-
-    public NativeBridge(Activity activity, WebView webView) {
-        this.activity = activity;
-        this.webView = webView;
+/** Only exposed to the packaged, CSP-protected appassets page. Never accepts filesystem paths. */
+public final class NativeBridge {
+    private final MainActivity activity;
+    private final WebView web;
+    private final SnapCleanApp app;
+    private volatile boolean closed;
+    private final AtomicBoolean updating=new AtomicBoolean();
+    NativeBridge(MainActivity activity,WebView web) {
+        this.activity=activity;this.web=web;this.app=SnapCleanApp.of(activity);
     }
-
-    @JavascriptInterface
-    public void inspectUrl(String url) {
-        if (url == null || url.trim().isEmpty()) {
-            sendErrorToWeb("الرابط مطلوب");
-            return;
-        }
-
-        executor.execute(() -> {
-            String trimmedUrl = url.trim();
-            Log.d(TAG, "Inspecting URL on-device: " + trimmedUrl);
-
-            // Special handling for Instagram to bypass Meta's login wall
-            if (isInstagramUrl(trimmedUrl)) {
-                JSONObject igResult = inspectInstagramEmbed(trimmedUrl);
-                if (igResult != null) {
-                    sendInspectResultToWeb(igResult.toString());
-                    return;
-                }
-            }
-
-            try {
-                Log.d(TAG, "Inspecting URL via YoutubeDL engine: " + trimmedUrl);
-                YoutubeDLRequest request = new YoutubeDLRequest(trimmedUrl);
-                request.addOption("--no-warnings");
-                request.addOption("--no-check-certificates");
-
-                VideoInfo info = YoutubeDL.getInstance().getInfo(request);
-                if (info == null) {
-                    // Try Instagram fallback if not already tried
-                    if (isInstagramUrl(trimmedUrl)) {
-                        JSONObject igResult = inspectInstagramEmbed(trimmedUrl);
-                        if (igResult != null) {
-                            sendInspectResultToWeb(igResult.toString());
-                            return;
-                        }
-                    }
-                    sendErrorToWeb("تعذر استخراج معلومات الفيديو.");
-                    return;
-                }
-
-                JSONObject result = new JSONObject();
-                result.put("title", info.getTitle() != null ? info.getTitle() : "فيديو بدون عنوان");
-                result.put("thumbnail", info.getThumbnail() != null ? info.getThumbnail() : "");
-                result.put("duration", formatDuration(info.getDuration()));
-                result.put("uploader", info.getUploader() != null ? info.getUploader() : "غير معروف");
-                result.put("platform", info.getExtractor() != null ? info.getExtractor() : "منصة مدعومة");
-                result.put("url", trimmedUrl);
-
-                JSONArray options = new JSONArray();
-
-                // MP3 Audio option
-                JSONObject mp3Opt = new JSONObject();
-                mp3Opt.put("id", "mp3-best");
-                mp3Opt.put("type", "audio");
-                mp3Opt.put("quality", "mp3");
-                mp3Opt.put("label", "ملف صوتي MP3");
-                mp3Opt.put("badge", "صوت عالي الجودة");
-                mp3Opt.put("ext", "mp3");
-                options.put(mp3Opt);
-
-                // Video best option
-                JSONObject bestOpt = new JSONObject();
-                bestOpt.put("id", "video-best");
-                bestOpt.put("type", "video");
-                bestOpt.put("quality", "best");
-                bestOpt.put("label", "أعلى جودة متوافقة (HD MP4)");
-                bestOpt.put("badge", "موصى به للهاتف");
-                bestOpt.put("ext", "mp4");
-                options.put(bestOpt);
-
-                // 720p option
-                JSONObject hd720 = new JSONObject();
-                hd720.put("id", "video-720");
-                hd720.put("type", "video");
-                hd720.put("quality", "720");
-                hd720.put("label", "فيديو 720p HD");
-                hd720.put("badge", "720p");
-                hd720.put("ext", "mp4");
-                options.put(hd720);
-
-                // 480p option
-                JSONObject sd480 = new JSONObject();
-                sd480.put("id", "video-480");
-                sd480.put("type", "video");
-                sd480.put("quality", "480");
-                sd480.put("label", "فيديو 480p SD");
-                sd480.put("badge", "480p");
-                sd480.put("ext", "mp4");
-                options.put(sd480);
-
-                result.put("options", options);
-
-                sendInspectResultToWeb(result.toString());
-
-            } catch (Exception e) {
-                Log.e(TAG, "Inspect failed: " + e.getMessage(), e);
-                // Instagram fallback on error
-                if (isInstagramUrl(trimmedUrl)) {
-                    JSONObject igResult = inspectInstagramEmbed(trimmedUrl);
-                    if (igResult != null) {
-                        sendInspectResultToWeb(igResult.toString());
-                        return;
-                    }
-                }
-                sendErrorToWeb("فشل فحص الفيديو: " + e.getMessage());
-            }
+    public void close() { closed=true; }
+    public void emit(String type,JSONObject payload) {
+        String json=Json.object("type",type,"data",payload).toString().replace("\u2028","\\u2028").replace("\u2029","\\u2029");
+        activity.runOnUiThread(() -> {
+            if(!closed && activity.isPageReady()) web.evaluateJavascript("window.AppNative && window.AppNative.receive("+json+");",null);
         });
     }
-
-    private boolean isInstagramUrl(String url) {
-        return url != null && (url.contains("instagram.com") || url.contains("instagr.am"));
-    }
-
-    private JSONObject inspectInstagramEmbed(String url) {
-        try {
-            java.util.regex.Pattern p = java.util.regex.Pattern.compile("/(?:reel|reels|p)/([A-Za-z0-9_-]+)");
-            java.util.regex.Matcher m = p.matcher(url);
-            if (!m.find()) return null;
-            String shortcode = m.group(1);
-
-            String embedUrl = "https://www.instagram.com/p/" + shortcode + "/embed/";
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(embedUrl).openConnection();
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
-
-            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream()));
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line).append("\n");
-            }
-            reader.close();
-            String html = sb.toString();
-
-            // Extract direct video CDN URL (clean escaped slashes and unicode)
-            String cleanMp4 = null;
-            int mp4Idx = html.indexOf(".mp4");
-            if (mp4Idx != -1) {
-                int start = html.lastIndexOf("https:", mp4Idx);
-                if (start != -1) {
-                    int end = html.indexOf("\\\"", mp4Idx);
-                    if (end == -1) end = html.indexOf("\"", mp4Idx);
-                    if (end == -1) end = html.indexOf("'", mp4Idx);
-                    if (end != -1 && end > start) {
-                        String raw = html.substring(start, end);
-                        cleanMp4 = raw.replace("\\/", "/").replace("\\u0026", "&").replace("\\", "").trim();
-                    }
-                }
-            }
-
-            if (cleanMp4 == null) {
-                java.util.regex.Pattern mp4Pattern = java.util.regex.Pattern.compile("https[^\\s\"\'<>]+\\.mp4[^\\s\"\'<>]*");
-                java.util.regex.Matcher mp4Matcher = mp4Pattern.matcher(html.replace("\\/", "/"));
-                if (mp4Matcher.find()) {
-                    cleanMp4 = mp4Matcher.group(0).replace("\\u0026", "&").replace("\\", "").trim();
-                }
-            }
-
-            if (cleanMp4 == null) {
-                Log.w(TAG, "No mp4 found in Instagram embed");
-                return null;
-            }
-
-            // Extract thumbnail
-            String thumb = "";
-            java.util.regex.Pattern posterPattern = java.util.regex.Pattern.compile("class=\"EmbeddedMediaImage\"[^>]+src=\"([^\"]+)\"");
-            java.util.regex.Matcher posterMatcher = posterPattern.matcher(html);
-            if (posterMatcher.find()) {
-                thumb = posterMatcher.group(1).replace("&amp;", "&");
-            }
-
-            JSONObject result = new JSONObject();
-            result.put("title", "Instagram Reel (" + shortcode + ")");
-            result.put("thumbnail", thumb);
-            result.put("duration", "00:30");
-            result.put("uploader", "Instagram");
-            result.put("platform", "Instagram");
-            result.put("url", url);
-
-            JSONArray options = new JSONArray();
-
-            JSONObject videoOpt = new JSONObject();
-            videoOpt.put("id", "ig-video");
-            videoOpt.put("type", "ig_direct");
-            videoOpt.put("quality", cleanMp4);
-            videoOpt.put("label", "فيديو عالي الجودة (HD MP4)");
-            videoOpt.put("badge", "تحميل فوري");
-            videoOpt.put("ext", "mp4");
-            options.put(videoOpt);
-
-            JSONObject audioOpt = new JSONObject();
-            audioOpt.put("id", "ig-audio");
-            audioOpt.put("type", "ig_audio");
-            audioOpt.put("quality", cleanMp4);
-            audioOpt.put("label", "ملف صوتي MP3");
-            audioOpt.put("badge", "صوت نقي");
-            audioOpt.put("ext", "mp3");
-            options.put(audioOpt);
-
-            result.put("options", options);
-            Log.d(TAG, "Successfully extracted direct Instagram media URL!");
-            return result;
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to parse Instagram embed: " + e.getMessage(), e);
-            return null;
-        }
-    }
-
-    @JavascriptInterface
-    public void startDownload(String url, String formatType, String quality) {
-        executor.execute(() -> {
+    public void error(String message) { emit("error",Json.object("message",message)); }
+    public void message(String message) { emit("message",Json.object("message",message)); }
+    @JavascriptInterface public void ready() { snapshot(false); }
+    @JavascriptInterface public void refreshLibrary() { snapshot(true); }
+    public void snapshot(boolean checkFiles) {
+        if(closed) return;
+        app.io.execute(() -> {
             try {
-                Log.d(TAG, "Starting download on-device: " + url + " | " + formatType);
-
-                // Handle direct Instagram stream download
-                if ("ig_direct".equals(formatType) || "ig_audio".equals(formatType)) {
-                    downloadDirectMedia(quality, "ig_audio".equals(formatType), "Instagram_Reel_" + System.currentTimeMillis());
-                    return;
-                }
-
-                File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                if (!downloadDir.exists()) {
-                    downloadDir.mkdirs();
-                }
-
-                String taskId = "dl_" + System.currentTimeMillis();
-                File tempDir = new File(activity.getCacheDir(), taskId);
-                tempDir.mkdirs();
-
-                updateDownloadProgress(10, "جاري تحضير المحرك المدمج في الهاتف...");
-
-                YoutubeDLRequest request = new YoutubeDLRequest(url);
-                request.addOption("-o", new File(tempDir, "%(title).50s.%(ext)s").getAbsolutePath());
-                request.addOption("--no-check-certificates");
-
-                if ("audio".equals(formatType)) {
-                    request.addOption("-x");
-                    request.addOption("--audio-format", "mp3");
-                    request.addOption("--audio-quality", "192K");
-                } else {
-                    if ("best".equals(quality)) {
-                        request.addOption("-f", "bestvideo[vcodec^=avc1][height<=1080]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best[height<=1080]/best");
-                    } else {
-                        try {
-                            int h = Integer.parseInt(quality);
-                            request.addOption("-f", "bestvideo[vcodec^=avc1][height<=" + h + "]+bestaudio[ext=m4a]/bestvideo[height<=" + h + "]+bestaudio/best[height<=" + h + "]/best");
-                        } catch (Exception ex) {
-                            request.addOption("-f", "bestvideo[vcodec^=avc1]+bestaudio/best");
-                        }
+                JSONArray records=new JSONArray();
+                for(DownloadRecord r:app.store.all()) {
+                    if(checkFiles && "completed".equals(r.status)) {
+                        r.missing=!app.files.exists(r);app.store.setMissing(r.id,r.missing);
+                        if(!r.missing) app.files.createThumbnail(r);
                     }
-                    request.addOption("--merge-output-format", "mp4");
+                    records.put(r.toJson());
                 }
-
-                YoutubeDL.getInstance().execute(request, taskId, (progress, etaInSeconds, line) -> {
-                    if (progress != null) {
-                        int p = progress.intValue();
-                        if (p > 10 && p < 99) {
-                            updateDownloadProgress(p, "السرعة: جاري التنزيل المباشر (" + p + "%)");
-                        }
-                    }
-                    return kotlin.Unit.INSTANCE;
+                String version=YoutubeDL.getInstance().versionName(activity.getApplicationContext());
+                emit("snapshot",Json.object("items",records,"version",BuildConfig.VERSION_NAME,
+                        "buildType",BuildConfig.BUILD_TYPE,"engineVersion",version==null ? "المحرك المرفق" : version));
+            } catch(Exception ex) { error("تعذر قراءة مكتبة الملفات."); }
+        });
+    }
+    @JavascriptInterface public void inspectUrl(String raw,String requestId) {
+        final String url;
+        try { url=DownloadPolicy.extractUrl(raw); }
+        catch(Exception ex) { emit("inspectError",Json.object("requestId",requestId,"message",ex.getMessage()));return; }
+        if(requestId==null || requestId.length()>64) return;
+        app.inspector.execute(() -> {
+            boolean locked=false;
+            try {
+                EngineRuntime.WORK.lockInterruptibly();locked=true;
+                EngineRuntime.ensureReady(activity.getApplicationContext());
+                YoutubeDLRequest request=EngineRuntime.request(url);
+                request.addOption("--skip-download");
+                VideoInfo info=YoutubeDL.getInstance().getInfo(request);
+                if(info==null) throw new IllegalArgumentException("تعذر استخراج بيانات هذا الرابط.");
+                TreeSet<Integer> heights=new TreeSet<>(Collections.reverseOrder());
+                if(info.getFormats()!=null) for(VideoFormat format:info.getFormats()) {
+                    if(format.getHeight()>=144 && format.getHeight()<=4320 && !"none".equals(format.getVcodec())) heights.add(format.getHeight());
+                }
+                JSONArray qualities=new JSONArray();
+                for(int h:heights) qualities.put(h);
+                String thumbnail=info.getThumbnail();
+                if(thumbnail==null || !thumbnail.startsWith("https://")) thumbnail="";
+                emit("inspect",Json.object("requestId",requestId,"url",url,
+                        "title",info.getTitle()==null ? "فيديو بدون عنوان" : info.getTitle(),
+                        "thumbnail",thumbnail,"duration",info.getDuration(),"uploader",info.getUploader(),
+                        "platform",info.getExtractor(),"qualities",qualities));
+            } catch(Exception ex) {
+                if(ex instanceof InterruptedException) Thread.currentThread().interrupt();
+                emit("inspectError",Json.object("requestId",requestId,"message",EngineRuntime.readableError(ex)));
+            } finally { if(locked) EngineRuntime.WORK.unlock(); }
+        });
+    }
+    @JavascriptInterface public void startDownload(String raw,String type,String quality,String title) {
+        try {
+            String url=DownloadPolicy.normalizeUrl(raw);
+            String format=DownloadPolicy.format(type), selected=DownloadPolicy.quality(format,quality);
+            activity.runOnUiThread(() -> activity.withDownloadPermissions(() -> app.io.execute(() -> {
+                try {
+                    long id=app.store.enqueue(url,format,selected,title);
+                    if(id<0) { error("هذا الرابط بنفس الجودة موجود بالفعل في طابور التنزيل.");return; }
+                    activity.runOnUiThread(() -> DownloadService.start(activity,id));
+                    snapshot(false);message("أُضيف إلى طابور التنزيل.");
+                } catch(Exception ex) { error("تعذر إضافة التنزيل: "+ex.getMessage()); }
+            })));
+        } catch(Exception ex) { error(ex.getMessage()); }
+    }
+    @JavascriptInterface public void retry(long id) {
+        if(DownloadService.isInFlight(id)) { error("انتظر انتهاء إغلاق عملية التنزيل السابقة ثم أعد المحاولة.");return; }
+        activity.runOnUiThread(() -> activity.withDownloadPermissions(() -> app.io.execute(() -> {
+            if(DownloadService.isInFlight(id)) { error("عملية التنزيل السابقة ما زالت تُغلق.");return; }
+            if(app.store.retry(id)) activity.runOnUiThread(() -> DownloadService.start(activity,id));
+            else error("لا يمكن إعادة المحاولة الآن، أو أن التنزيل نفسه نشط بالفعل.");
+            snapshot(false);
+        })));
+    }
+    @JavascriptInterface public void cancel(long id) { DownloadService.cancel(activity,id); }
+    @JavascriptInterface public void importFiles() { activity.runOnUiThread(activity::chooseImports); }
+    @JavascriptInterface public void exportLibrary() { activity.runOnUiThread(activity::chooseExport); }
+    @JavascriptInterface public void setTheme(boolean light) { activity.setLightTheme(light); }
+    @JavascriptInterface public void paste() {
+        activity.runOnUiThread(() -> {
+            try {
+                ClipboardManager clipboard=(ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE);
+                if(clipboard==null || !clipboard.hasPrimaryClip() || clipboard.getPrimaryClip()==null) { error("الحافظة فارغة.");return; }
+                CharSequence text=clipboard.getPrimaryClip().getItemAt(0).coerceToText(activity);
+                emit("paste",Json.object("text",text==null ? "" : text.toString()));
+            } catch(Exception ex) { error("تعذر قراءة الحافظة. استخدم اللصق من لوحة المفاتيح."); }
+        });
+    }
+    @JavascriptInterface public void play(long id) {
+        app.io.execute(() -> {
+            DownloadRecord record=available(id);
+            if(record==null) return;
+            activity.runOnUiThread(() -> {
+                try { activity.startActivity(new Intent(activity,PlayerActivity.class).putExtra("id",id)); }
+                catch(Exception ex) { error("تعذر فتح المشغل."); }
+            });
+        });
+    }
+    @JavascriptInterface public void share(long id) {
+        app.io.execute(() -> {
+            DownloadRecord record=available(id);
+            if(record==null) return;
+            try {
+                Uri uri=app.files.shareUri(record);
+                Intent send=new Intent(Intent.ACTION_SEND).setType(record.mime)
+                        .putExtra(Intent.EXTRA_STREAM,uri).putExtra(Intent.EXTRA_TITLE,record.title)
+                        .setClipData(ClipData.newRawUri(record.title,uri)).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                activity.runOnUiThread(() -> {
+                    try { activity.startActivity(Intent.createChooser(send,"مشاركة الملف")); }
+                    catch(Exception ex) { error("لم أجد تطبيقاً مناسباً لمشاركة الملف."); }
                 });
-
-                updateDownloadProgress(99, "جاري دمج الملف وحفظه في التنزيلات...");
-
-                // Find saved file in tempDir
-                File[] files = tempDir.listFiles();
-                if (files != null && files.length > 0) {
-                    File producedFile = files[0];
-                    String targetName = producedFile.getName().replaceAll("[\\\\/:*?\"<>|]", "_").trim();
-                    boolean saved = saveToPublicDownloads(producedFile, targetName, "audio".equals(formatType));
-                    if (saved) {
-                        try {
-                            producedFile.delete();
-                            tempDir.delete();
-                        } catch (Exception ignored) {}
-                        notifyDownloadComplete(targetName);
-                    } else {
-                        sendDownloadFailed("تعذر حفظ الملف في مجلد التنزيلات.");
-                    }
+            } catch(Exception ex) { error(ex.getMessage()); }
+        });
+    }
+    private DownloadRecord available(long id) {
+        DownloadRecord record=app.store.get(id);
+        if(record==null || !"completed".equals(record.status)) { error("هذا الملف غير موجود في المكتبة.");return null; }
+        if(!app.files.exists(record)) {
+            app.store.setMissing(id,true);snapshot(false);
+            error("الملف نُقل أو حُذف خارج التطبيق، أو انتهت صلاحية الوصول إليه. استورده مجدداً أو أعد تنزيله.");return null;
+        }
+        if(record.missing) app.store.setMissing(id,false);
+        return record;
+    }
+    @JavascriptInterface public void sourceAction(long id,String action) {
+        app.io.execute(() -> {
+            DownloadRecord record=app.store.get(id);
+            if(record==null) return;
+            activity.runOnUiThread(() -> {
+                if("edit".equals(action)) { editSource(record);return; }
+                if(record.sourceUrl.isEmpty()) { error("لا يوجد رابط محفوظ لهذا الملف. يمكنك إضافته من قائمة الملف.");return; }
+                if("copy".equals(action)) {
+                    ClipboardManager clip=(ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE);
+                    if(clip!=null) { clip.setPrimaryClip(ClipData.newPlainText("رابط المصدر",record.sourceUrl));message("تم نسخ رابط المصدر."); }
+                } else if("open".equals(action)) activity.openExternal(record.sourceUrl);
+                else if("share".equals(action)) {
+                    try { activity.startActivity(Intent.createChooser(new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,record.sourceUrl),"مشاركة الرابط")); }
+                    catch(Exception ex) { error("تعذر مشاركة الرابط."); }
+                }
+            });
+        });
+    }
+    private void editSource(DownloadRecord r) {
+        EditText input=new EditText(activity);input.setSingleLine(true);input.setText(r.sourceUrl);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_URI);
+        input.setHint("https://…");input.setTextDirection(android.view.View.TEXT_DIRECTION_LTR);
+        LinearLayout box=new LinearLayout(activity);int pad=(int)(20*activity.getResources().getDisplayMetrics().density);
+        box.setPadding(pad,pad,pad,0);box.addView(input,new LinearLayout.LayoutParams(-1,-2));
+        AlertDialog dialog=new AlertDialog.Builder(activity).setTitle("رابط المصدر")
+                .setMessage("يمكنك إضافة الرابط الأصلي أو تعديله. اتركه فارغاً لإزالته من السجل.")
+                .setView(box).setNegativeButton("إلغاء",null).setPositiveButton("حفظ",null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            try {
+                String value=input.getText().toString().trim();
+                String url=value.isEmpty() ? "" : DownloadPolicy.normalizeUrl(value);
+                app.io.execute(() -> { app.store.setSource(r.id,url);snapshot(false); });dialog.dismiss();
+            } catch(Exception ex) { input.setError(ex.getMessage()); }
+        }));
+        dialog.show();
+    }
+    @JavascriptInterface public void requestDelete(long id) {
+        app.io.execute(() -> {
+            DownloadRecord r=app.store.get(id);
+            if(r==null || DownloadPolicy.isActive(r.status)) return;
+            activity.runOnUiThread(() -> {
+                AlertDialog.Builder dialog=new AlertDialog.Builder(activity).setTitle(r.title).setNegativeButton("إلغاء",null);
+                if(r.imported || !"completed".equals(r.status)) {
+                    dialog.setMessage("إزالة السجل من المكتبة؟ لن نحذف أي ملف من جهازك.")
+                            .setPositiveButton("إزالة السجل",(d,w) -> remove(r,false));
                 } else {
-                    sendDownloadFailed("لم يتم العثور على الملف بعد التنزيل.");
+                    dialog.setMessage("حذف الملف يمسحه من الجهاز. إزالة السجل فقط تُبقي الملف وتزيل بياناته ورابطه من المكتبة.")
+                            .setNeutralButton("إزالة السجل فقط",(d,w) -> remove(r,false))
+                            .setPositiveButton("حذف الملف",(d,w) -> remove(r,true));
                 }
-
-            } catch (Exception e) {
-                Log.e(TAG, "Download failed: " + e.getMessage(), e);
-                sendDownloadFailed("فشل التنزيل: " + e.getMessage());
-            }
+                dialog.show();
+            });
         });
     }
-
-    private void downloadDirectMedia(String directUrl, boolean isAudio, String baseName) {
-        try {
-            updateDownloadProgress(15, "الاتصال المباشر بسيرفرات الفيديو...");
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(directUrl).openConnection();
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(20000);
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode != 200) {
-                sendDownloadFailed("فشل الاتصال برابط الفيديو (كود: " + responseCode + ")");
-                return;
-            }
-
-            int contentLength = conn.getContentLength();
-            String extension = isAudio ? ".mp3" : ".mp4";
-            String finalFileName = baseName + extension;
-
-            File tempFile = new File(activity.getCacheDir(), "ig_temp_" + System.currentTimeMillis() + extension);
-            try (java.io.InputStream in = conn.getInputStream();
-                 java.io.FileOutputStream out = new java.io.FileOutputStream(tempFile)) {
-
-                byte[] buffer = new byte[16384];
-                int bytesRead;
-                long totalBytesRead = 0;
-
-                while ((bytesRead = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, bytesRead);
-                    totalBytesRead += bytesRead;
-                    if (contentLength > 0) {
-                        int progress = (int) ((totalBytesRead * 80) / contentLength) + 15;
-                        updateDownloadProgress(progress, "جاري التنزيل المباشر (" + progress + "%)...");
-                    }
+    private void remove(DownloadRecord record,boolean deleteFile) {
+        app.io.execute(() -> {
+            try {
+                if(deleteFile) app.files.deleteOwned(record);
+                app.store.remove(record.id);app.files.thumbnailFile(record.id).delete();
+                if(record.imported) {
+                    try { activity.getContentResolver().releasePersistableUriPermission(Uri.parse(record.uri),Intent.FLAG_GRANT_READ_URI_PERMISSION); }
+                    catch(Exception ignored) {}
                 }
-                out.flush();
-            }
-
-            updateDownloadProgress(98, "جاري حفظ الملف في مجلد التنزيلات...");
-            boolean saved = saveToPublicDownloads(tempFile, finalFileName, isAudio);
-            try { tempFile.delete(); } catch (Exception ignored) {}
-
-            if (saved) {
-                notifyDownloadComplete(finalFileName);
-            } else {
-                sendDownloadFailed("تعذر حفظ ملف إنستغرام في مجلد التنزيلات.");
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "Direct download failed: " + e.getMessage(), e);
-            sendDownloadFailed("فشل تنزيل إنستغرام: " + e.getMessage());
-        }
-    }
-
-    private boolean saveToPublicDownloads(File sourceFile, String displayName, boolean isAudio) {
-        // First try standard File move if direct write permitted
-        try {
-            File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            File dest = new File(downloadDir, displayName);
-            if (sourceFile.renameTo(dest)) {
-                notifyMediaScanner(dest);
-                return true;
-            }
-        } catch (Exception ignored) {}
-
-        // Use Android MediaStore API (Standard for Android 10, 11, 12, 13+)
-        try {
-            android.content.ContentResolver resolver = activity.getContentResolver();
-            android.content.ContentValues values = new android.content.ContentValues();
-            values.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, displayName);
-            values.put(android.provider.MediaStore.MediaColumns.MIME_TYPE, isAudio ? "audio/mpeg" : "video/mp4");
-            
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                values.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
-                values.put(android.provider.MediaStore.MediaColumns.IS_PENDING, 1);
-            }
-
-            Uri collectionUri;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                collectionUri = android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI;
-            } else {
-                collectionUri = isAudio ? android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI : android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
-            }
-
-            Uri itemUri = resolver.insert(collectionUri, values);
-            if (itemUri != null) {
-                try (java.io.InputStream in = new java.io.FileInputStream(sourceFile);
-                     java.io.OutputStream out = resolver.openOutputStream(itemUri)) {
-                    byte[] buffer = new byte[8192];
-                    int len;
-                    while ((len = in.read(buffer)) > 0) {
-                        out.write(buffer, 0, len);
-                    }
-                    out.flush();
-                }
-
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    values.clear();
-                    values.put(android.provider.MediaStore.MediaColumns.IS_PENDING, 0);
-                    resolver.update(itemUri, values, null, null);
-                }
-
-                Log.d(TAG, "Successfully saved via MediaStore to: " + itemUri);
-                return true;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "MediaStore insert error: " + e.getMessage(), e);
-        }
-
-        // Fallback: try raw file stream copy to Downloads directory
-        try {
-            File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            File dest = new File(downloadDir, displayName);
-            try (java.io.InputStream in = new java.io.FileInputStream(sourceFile);
-                 java.io.OutputStream out = new java.io.FileOutputStream(dest)) {
-                byte[] buffer = new byte[8192];
-                int len;
-                while ((len = in.read(buffer)) > 0) {
-                    out.write(buffer, 0, len);
-                }
-                out.flush();
-            }
-            notifyMediaScanner(dest);
-            return true;
-        } catch (Exception e) {
-            Log.e(TAG, "Raw file copy fallback error: " + e.getMessage(), e);
-        }
-
-        return false;
-    }
-
-    private void notifyMediaScanner(File file) {
-        try {
-            android.media.MediaScannerConnection.scanFile(
-                    activity,
-                    new String[]{file.getAbsolutePath()},
-                    null,
-                    (path, uri) -> Log.d(TAG, "Scanned into media gallery: " + path)
-            );
-        } catch (Exception ignored) {}
-    }
-
-    private void sendInspectResultToWeb(String jsonString) {
-        activity.runOnUiThread(() -> {
-            String script = "window.renderVideoData && window.renderVideoData(" + jsonString + ");";
-            webView.evaluateJavascript(script, null);
+                snapshot(false);message(deleteFile ? "تم حذف الملف." : "تمت إزالة السجل؛ الملف نفسه لم يُحذف.");
+            } catch(Exception ex) { error(ex.getMessage()); }
         });
     }
-
-    private void sendErrorToWeb(String msg) {
-        activity.runOnUiThread(() -> {
-            String script = "window.showAlert && window.showAlert('" + escapeJs(msg) + "');";
-            webView.evaluateJavascript(script, null);
+    @JavascriptInterface public void updateEngine() {
+        if(!updating.compareAndSet(false,true)) return;
+        emit("engineUpdating",Json.object("busy",true));
+        app.inspector.execute(() -> {
+            boolean locked=false;
+            try {
+                for(DownloadRecord r:app.store.all()) if(DownloadPolicy.isActive(r.status))
+                    throw new IllegalStateException("انتظر اكتمال طابور التنزيلات قبل تحديث المحرك.");
+                EngineRuntime.UPDATE.lockInterruptibly();locked=true;
+                EngineRuntime.ensureReady(activity.getApplicationContext());
+                YoutubeDL.getInstance().updateYoutubeDL(activity.getApplicationContext(),YoutubeDL.UpdateChannel._STABLE);
+                message("محرك yt-dlp محدّث إلى الإصدار المستقر المتاح.");snapshot(false);
+            } catch(Exception ex) {
+                if(ex instanceof InterruptedException) Thread.currentThread().interrupt();
+                error(EngineRuntime.readableError(ex));
+            } finally {
+                if(locked) EngineRuntime.UPDATE.unlock();
+                updating.set(false);emit("engineUpdating",Json.object("busy",false));
+            }
         });
-    }
-
-    private void updateDownloadProgress(int percent, String statusText) {
-        activity.runOnUiThread(() -> {
-            String script = "window.updateNativeProgress && window.updateNativeProgress(" + percent + ", '" + escapeJs(statusText) + "');";
-            webView.evaluateJavascript(script, null);
-        });
-    }
-
-    private void notifyDownloadComplete(String filename) {
-        activity.runOnUiThread(() -> {
-            Toast.makeText(activity, "تم حفظ الملف بنجاح: " + filename, Toast.LENGTH_LONG).show();
-            String script = "window.onNativeDownloadReady && window.onNativeDownloadReady('" + escapeJs(filename) + "');";
-            webView.evaluateJavascript(script, null);
-        });
-    }
-
-    private void sendDownloadFailed(String error) {
-        activity.runOnUiThread(() -> {
-            String script = "window.onNativeDownloadFailed && window.onNativeDownloadFailed('" + escapeJs(error) + "');";
-            webView.evaluateJavascript(script, null);
-        });
-    }
-
-    private String formatDuration(long seconds) {
-        if (seconds <= 0) return "00:00";
-        long m = (seconds % 3600) / 60;
-        long s = seconds % 60;
-        long h = seconds / 3600;
-        if (h > 0) {
-            return String.format("%02d:%02d:%02d", h, m, s);
-        }
-        return String.format("%02d:%02d", m, s);
-    }
-
-    private String escapeJs(String str) {
-        if (str == null) return "";
-        return str.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ");
     }
 }

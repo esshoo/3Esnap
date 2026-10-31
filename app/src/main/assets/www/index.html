@@ -1,159 +1,88 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>SnapClean - محمل الوسائط الذكي بدون إعلانات</title>
-  <meta name="description" content="تحميل الفيديوهات والمقاطع الصوتية من يوتيوب وفيسبوك وإنستغرام وتيك توك بدون تسجيل وبدون إعلانات.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="color-scheme" content="dark light">
+  <title>3Esnap</title>
   <link rel="stylesheet" href="style.css">
+  <script defer src="core.js"></script>
+  <script defer src="app.js"></script>
 </head>
 <body>
-  <div class="ambient-blur"></div>
-
-  <div class="container">
-    <!-- Header -->
-    <header>
-      <div class="logo-badge">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-        </svg>
-        نسخة نظيفة 100% • بدون إعلانات • بدون حساب
-      </div>
-      <div id="apkBanner" style="margin-bottom: 20px;">
-        <a href="/static/SnapClean.apk" download style="display: inline-flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #a7f3d0; padding: 10px 20px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: transform 0.2s;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993s-.4483.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993s-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 7.7884 13.8533 7.3333 12 7.3333s-3.5902.4551-5.1368 1.1164L4.8409 4.9467a.416.416 0 00-.5676-.1521.416.416 0 00-.1521.5676l1.9973 3.4592C2.6889 10.7674.3418 14.1818 0 18.2576h24c-.3418-4.0758-2.6889-7.4902-6.1185-9.4362"/>
-          </svg>
-          تحميل تطبيق أندرويد (SnapClean APK)
-        </a>
-      </div>
-      <h1>محمّل الفيديوهات <span>SnapClean</span></h1>
-      <p class="subtitle">قم بتحميل الفيديوهات والموسيقى بأعلى جودة متوفرة من يوتيوب، إنستغرام، فيسبوك، تيك توك والمزيد بضغطة زر واحدة.</p>
-
-      <div class="platforms-strip">
-        <span class="platform-tag">
-          <svg fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-          YouTube
-        </span>
-        <span class="platform-tag">
-          <svg fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-          Facebook
-        </span>
-        <span class="platform-tag">
-          <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-          Instagram
-        </span>
-        <span class="platform-tag">
-          <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.99v7.86c-.02 2.39-1.07 4.74-2.88 6.32-1.92 1.67-4.59 2.4-7.07 1.95-2.66-.48-5-2.22-6.26-4.63-1.25-2.39-1.15-5.38.25-7.68 1.42-2.34 3.94-3.86 6.69-3.95v4.18c-1.3.06-2.57.73-3.29 1.8-.75 1.1-1.03 2.5-.77 3.8.27 1.34 1.15 2.5 2.38 3.1 1.23.6 2.71.6 3.94 0 1.23-.6 2.06-1.8 2.14-3.2V.02z"/></svg>
-          TikTok
-        </span>
-      </div>
-    </header>
-
-    <!-- Error Alert -->
-    <div id="alertBox" class="alert alert-error">
-      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" stroke-width="2"/>
-        <line x1="12" y1="8" x2="12" y2="12" stroke-width="2"/>
-        <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2"/>
-      </svg>
-      <span id="alertMsg">حدث خطأ</span>
-    </div>
-
-    <!-- Search Input Area -->
-    <div class="input-card">
-      <div class="input-wrapper">
-        <input 
-          type="text" 
-          id="urlInput" 
-          class="url-input" 
-          placeholder="ضع رابط الفيديو هنا (YouTube, Instagram, Facebook...)" 
-          autocomplete="off"
-        />
-        <div class="input-actions">
-          <button id="btnPaste" class="btn-paste" title="لصق الرابط">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-            </svg>
-            لصق
-          </button>
-          <button id="btnFetch" class="btn-fetch">
-            <div class="spinner" id="btnSpinner"></div>
-            <span id="btnText">جلب الخيارات</span>
-          </button>
+<svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></symbol>
+  <symbol id="i-library" viewBox="0 0 24 24"><path d="M4 6h16v14H4zM7 3h10M10 10l5 3-5 3z"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 5h11M9 12h11M9 19h11M4 5h.01M4 12h.01M4 19h.01"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="m9 15 6-6m-7 8-2 2a4.3 4.3 0 0 1-6-6l5-5a4.3 4.3 0 0 1 6 0m2-1 2-2a4.3 4.3 0 0 1 6 6l-5 5a4.3 4.3 0 0 1-6 0" transform="translate(1 0) scale(.95)"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><path d="M8 8h12v12H8zM16 8V4H4v12h4"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><circle cx="5" cy="12" r="3"/><circle cx="18" cy="5" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8 10 7-4M8 14l7 4"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 9a8 8 0 1 0 0 6M20 3v6h-6"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 3h7v7m0-7L11 13M10 5H4v15h15v-6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13M9 9l11-2"/><ellipse cx="5.5" cy="18.5" rx="3.5" ry="2.5"/><ellipse cx="16.5" cy="16.5" rx="3.5" ry="2.5"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM3 9h18M7 5l4 4m3-4 4 4"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4 8 9 8 9s8-5 8-9V6zM8 12l3 3 5-6"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="m15 4 5 5M4 20l5-1L21 7l-4-4L5 15z"/></symbol>
+</defs></svg>
+<div class="app-shell">
+  <header class="app-header">
+    <button class="brand" type="button" data-tab="download" aria-label="3Esnap — الرئيسية"><img src="brand.svg" alt="" width="46" height="46"><span dir="ltr">3E<span class="brand-soft">snap</span><small>SAVE. KEEP. PLAY.</small></span></button>
+    <button class="icon-button theme-quick" id="themeQuick" type="button" aria-label="تغيير المظهر"><svg class="icon"><use href="#i-sun"/></svg></button>
+  </header>
+  <div id="previewBanner" class="preview-banner" hidden>معاينة الواجهة فقط — وظائف الهاتف تحتاج نسخة APK.</div>
+  <main id="mainContent">
+    <div id="errorBox" class="notice" role="alert" hidden><p id="errorText"></p><button id="dismissError" class="icon-button" type="button" aria-label="إغلاق التنبيه"><svg class="icon"><use href="#i-close"/></svg></button></div>
+    <section id="panel-download" class="panel" aria-labelledby="downloadTitle">
+      <div class="hero"><p class="eyebrow"><span class="status-dot"></span> فيديوهاتك. في مكان واحد.</p><h1 id="downloadTitle">اللي يعجبك،<br><span>خلّيه عندك.</span></h1><p class="subtle hero-description">نزّل الفيديو أو الصوت، وارجع له وقت ما تحب.<br>رابطه الأصلي محفوظ معاه.</p></div>
+      <form id="inspectForm" class="input-card" novalidate>
+        <label for="urlInput">ابدأ برابط</label>
+        <div class="url-field"><svg class="icon"><use href="#i-link"/></svg><input id="urlInput" type="text" inputmode="url" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…" aria-label="رابط الفيديو"><button id="pasteButton" class="paste-button" type="button">لصق</button></div>
+        <button id="inspectButton" class="button primary full" type="submit"><svg class="icon"><use href="#i-search"/></svg><span id="inspectLabel">جلب خيارات التنزيل</span><span id="inspectSpinner" class="spinner" hidden></span></button>
+        <div class="platforms" dir="ltr"><span>YouTube</span><i></i><span>Instagram</span><i></i><span>TikTok</span><i></i><span>Facebook</span></div>
+      </form>
+      <section id="resultCard" class="result-card" aria-labelledby="resultTitle" hidden>
+        <div class="result-media"><img id="resultThumb" src="media-placeholder.svg" alt="معاينة الفيديو" referrerpolicy="no-referrer"><span id="resultDuration" class="duration-badge" dir="ltr">—</span></div>
+        <div class="result-body"><p class="eyebrow" id="resultPlatform"></p><h2 id="resultTitle"></h2><p class="subtle" id="resultAuthor"></p>
+          <div class="download-controls"><label>الصيغة<select id="formatSelect"><option value="video">فيديو MP4</option><option value="audio">صوت MP3</option></select></label><label id="qualityLabel">الجودة<select id="qualitySelect"><option value="best">أفضل جودة</option></select></label></div>
+          <button id="downloadButton" class="button primary full" type="button"><svg class="icon"><use href="#i-download"/></svg>إضافة إلى التنزيلات</button>
+          <p class="hint"><svg class="icon"><use href="#i-link"/></svg>هنحتفظ برابط المصدر تلقائياً.</p>
         </div>
-      </div>
-    </div>
-
-    <!-- Result Area -->
-    <div id="resultCard" class="result-card">
-      <div class="video-meta">
-        <div class="thumbnail-wrapper">
-          <img id="videoThumb" src="" alt="Thumbnail">
-          <span class="duration-tag" id="videoDuration">00:00</span>
-        </div>
-        <div class="meta-details">
-          <h3 class="video-title" id="videoTitle">عنوان الفيديو</h3>
-          <div class="meta-tags">
-            <span class="meta-tag" id="videoAuthor">القناة / الناشر</span>
-            <span class="meta-tag" id="videoPlatform">المنصة</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="options-title">اختر صيغة وجودة التحميل:</div>
-      <div class="options-grid" id="optionsGrid">
-        <!-- Generated dynamically -->
-      </div>
-    </div>
-
-    <!-- Progress Panel -->
-    <div id="progressPanel" class="progress-panel">
-      <div class="progress-header">
-        <span class="progress-title" id="jobTitle">جاري تحميل وتجهيز الملف...</span>
-        <span class="progress-pct" id="progressPct">0%</span>
-      </div>
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" id="progressBarFill"></div>
-      </div>
-      <div class="progress-subtext">
-        <span id="downloadSpeed">السرعة: --</span>
-        <span id="downloadStatusText">جاري الاتصال بالسيرفر والتحويل...</span>
-      </div>
-      <div id="downloadActionContainer" style="display: none;">
-        <a id="btnFinalDownload" class="btn-complete-download" href="#" download>
-          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-          </svg>
-          اضغط هنا لحفظ الملف الآن
-        </a>
-      </div>
-    </div>
-
-    <!-- Features explanation -->
-    <div class="features-grid">
-      <div class="feature-box">
-        <div class="icon">⚡</div>
-        <h4>سرعة استخراج فورية</h4>
-        <p>نظام ذكي متصل مباشرة بـ yt-dlp للحصول على روابط السيرفرات في ثوانٍ.</p>
-      </div>
-      <div class="feature-box">
-        <div class="icon">🛡️</div>
-        <h4>خصوصية وأمان 100%</h4>
-        <p>بدون حساب، بدون حفظ بياناتك الشخصية، وبدون إعلانات منبثقة مزعجة.</p>
-      </div>
-      <div class="feature-box">
-        <div class="icon">🎵</div>
-        <h4>استخراج MP3 بجودة عالية</h4>
-        <p>تحويل آلي مباشر للفيديوهات إلى ملفات صوتية نقية باستخدام محرك FFmpeg.</p>
-      </div>
-    </div>
-
-  </div>
-
-  <script src="app.js"></script>
+      </section>
+      <section id="queueSection" class="queue-section" aria-labelledby="queueTitle" hidden><div class="section-heading"><h2 id="queueTitle">قائمة التنزيلات</h2><span id="queueCount" class="count-pill">0</span></div><div id="queueList" class="queue-list"></div></section>
+      <div class="privacy-note"><svg class="icon"><use href="#i-shield"/></svg><p>المعالجة على جهازك. بدون حساب داخل التطبيق.<small>دعم الروابط العامة يعتمد على المنصة ومحرك التنزيل.</small></p></div>
+    </section>
+    <section id="panel-library" class="panel" aria-labelledby="libraryTitle" hidden>
+      <div class="page-heading"><div><p class="eyebrow">كل حاجة في مكانها</p><h1 id="libraryTitle">مكتبتك.</h1></div><button id="importButton" class="button secondary compact" type="button"><svg class="icon"><use href="#i-plus"/></svg>إضافة ملفات</button></div>
+      <div class="library-summary"><span><strong id="totalCount">0</strong> ملف محفوظ</span><span class="summary-divider"></span><span id="totalSize" dir="ltr">0 B</span><button id="refreshButton" class="icon-button" type="button" aria-label="تحديث المكتبة والتحقق من الملفات"><svg class="icon"><use href="#i-refresh"/></svg></button></div>
+      <div class="library-toolbar"><div class="search-field"><svg class="icon"><use href="#i-search"/></svg><input id="librarySearch" type="search" placeholder="ابحث باسم الملف أو رابطه…" aria-label="البحث في المكتبة" autocomplete="off"></div><div class="view-toggle" role="group" aria-label="طريقة عرض الملفات"><button class="icon-button selected" id="gridButton" type="button" aria-label="عرض الشبكة" aria-pressed="true"><svg class="icon"><use href="#i-grid"/></svg></button><button class="icon-button" id="listButton" type="button" aria-label="عرض القائمة" aria-pressed="false"><svg class="icon"><use href="#i-list"/></svg></button></div></div>
+      <div class="filter-row"><div class="filters" role="group" aria-label="نوع الملفات"><button type="button" class="filter active" data-filter="all" aria-pressed="true">الكل</button><button type="button" class="filter" data-filter="video" aria-pressed="false">فيديو</button><button type="button" class="filter" data-filter="audio" aria-pressed="false">صوت</button></div><select id="sortSelect" class="sort-select" aria-label="ترتيب الملفات"><option value="newest">الأحدث أولاً</option><option value="oldest">الأقدم أولاً</option><option value="name">حسب الاسم</option><option value="size">الأكبر حجماً</option></select></div>
+      <div id="libraryGrid" class="media-grid"></div>
+      <div id="libraryEmpty" class="empty-state" hidden><div class="empty-icon"><svg class="icon"><use href="#i-library"/></svg></div><h2 id="emptyTitle">مكان جاهز لتنزيلاتك</h2><p id="emptyDescription">أول ملف تنزّله هيظهر هنا.<br>عندك ملفات قديمة؟ اضغط «إضافة ملفات».</p><button id="emptyAction" class="button secondary" type="button">ابدأ تنزيل جديد</button></div>
+      <button id="loadMore" class="button secondary full" type="button" hidden>عرض المزيد</button>
+      <p class="library-footnote" id="libraryFootnote" hidden>الملفات المستوردة لا يُعرف رابطها تلقائياً؛ أضفه من قائمة الملف.</p>
+    </section>
+    <section id="panel-settings" class="panel" aria-labelledby="settingsTitle" hidden>
+      <div class="page-heading"><div><p class="eyebrow">على مزاجك</p><h1 id="settingsTitle">الإعدادات.</h1></div></div>
+      <div class="settings-card"><h2>العرض</h2><label class="settings-row" for="themeSelect"><span>مظهر التطبيق<small>اختيارك بيُحفظ على الجهاز</small></span><select id="themeSelect"><option value="dark">داكن</option><option value="light">فاتح</option><option value="system">حسب الجهاز</option></select></label></div>
+      <div class="settings-card"><h2>مكتبتك وروابطك</h2><button id="settingsImport" class="settings-action" type="button"><svg class="icon"><use href="#i-plus"/></svg><span>استيراد ملفات قديمة<small>إضافة للمكتبة بدون تكرار الملف أو نقله</small></span></button><button id="exportButton" class="settings-action" type="button"><svg class="icon"><use href="#i-link"/></svg><span>تصدير الروابط والبيانات<small>ملف JSON للاحتفاظ بروابط المصادر، وليس الفيديوهات</small></span></button><div class="settings-note">مكان التنزيلات الجديدة: <bdi>Download/3Esnap</bdi><br>السجل محلي؛ يُحذف عند مسح بيانات التطبيق. صدّر الروابط المهمة قبل ذلك.</div></div>
+      <div class="settings-card"><h2>محرك التنزيل</h2><p class="subtle">لو رابط عام كان بيشتغل وبطل، جرّب تحديث المحرك.</p><div class="engine-line"><span id="engineVersion" dir="ltr">yt-dlp</span><button id="updateEngine" class="button secondary compact" type="button"><svg class="icon"><use href="#i-refresh"/></svg><span>تحديث المحرك</span></button></div><p class="hint">يحتاج إنترنت، وبعد اكتمال التنزيلات النشطة.</p></div>
+      <div class="about-card"><img src="brand.svg" alt="شعار 3E" width="60" height="60"><h2 dir="ltr">3Esnap <span id="appVersion">2.0.0</span></h2><p>احفظ اللي يهمك، واحتفظ بمصدره.</p><small>مبني على SnapClean • GPL-3.0<br>نزّل المحتوى المسموح لك بحفظه فقط. بعض المنصات تقيّد التنزيل؛ التطبيق لا يتجاوز المحتوى الخاص أو الحماية.</small></div>
+    </section>
+  </main>
+  <nav class="bottom-nav" aria-label="التنقل الرئيسي"><button type="button" class="nav-item active" data-tab="download" aria-current="page"><svg class="icon"><use href="#i-download"/></svg><span>تنزيل</span></button><button type="button" class="nav-item" data-tab="library"><span class="nav-icon"><svg class="icon"><use href="#i-library"/></svg><small id="libraryBadge" hidden>0</small></span><span>المكتبة</span></button><button type="button" class="nav-item" data-tab="settings"><svg class="icon"><use href="#i-settings"/></svg><span>الإعدادات</span></button></nav>
+</div>
+<div id="sheetBackdrop" class="sheet-backdrop" hidden></div>
+<section id="fileSheet" class="file-sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" tabindex="-1" hidden><div class="sheet-handle"></div><div class="sheet-heading"><div><p id="sheetKind" class="eyebrow"></p><h2 id="sheetTitle"></h2></div><button id="closeSheet" class="icon-button" type="button" aria-label="إغلاق قائمة الملف"><svg class="icon"><use href="#i-close"/></svg></button></div><p id="sheetSource" class="source-text" dir="ltr"></p><div id="sheetActions"></div></section>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 </body>
 </html>

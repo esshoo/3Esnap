@@ -1,81 +1,75 @@
-# SnapClean - Clean, Fast & Ad-Free Media Downloader
+# 3Esnap
 
-<p align="center">
-  <img src="app/src/main/res/drawable/ic_download_icon.xml" width="96" height="96" alt="SnapClean Logo" />
-</p>
+**Save. Keep. Play.** — تنزيل الوسائط وتنظيمها وتشغيلها من مكتبة محلية عربية.
 
-<p align="center">
-  <strong>A standalone, open-source Android media downloader built for privacy and performance.</strong>
-</p>
+تطوير مستقل مبني على [SnapClean / snapclear](https://github.com/Eng-Harraz/snapclear)، مع الاحتفاظ بترخيص المشروع الأصلي GPL-3.0. الاسم داخل التطبيق وأيقونته أصبحا **3Esnap**. بقي مسار Java الداخلي `com.snapclean.app` لتطبيق التحديث فوق المستودع دون حذف الملفات الأصلية؛ هذا ليس اسم التطبيق الظاهر أو معرّفه الجديد.
 
-<p align="center">
-  <a href="#features">Features</a> •
-  <a href="#supported-platforms">Platforms</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#building-from-source">Building</a> •
-  <a href="#disclaimer">Disclaimer</a> •
-  <a href="#license">License</a>
-</p>
+> **حالة التسليم:** هذه نسخة مصدر معدلة وليست APK مبنية مسبقًا. اختبارات المنطق والهيكل والواجهة الموضحة في [تقرير الاختبارات](docs/TESTING.md) نجحت محليًا. لم يُنفَّذ تجميع Android أو اختبار على هاتف في بيئة التسليم؛ أول تحقق كامل للبناء سيكون عبر GitHub Actions بعد رفع الملفات. وجود workflow لا يعني أن البناء قد نجح بالفعل.
 
----
+## الوظائف
 
-## 🌟 Features
+- هوية 3E بأيقونة vector/adaptive، واجهة عربية RTL، وضع فاتح/داكن/حسب النظام.
+- تبويبات **تنزيل / المكتبة / الإعدادات**. استقبال الروابط من مشاركة أندرويد أو اللصق.
+- تنزيل MP4 واستخراج MP3 فعليًا عبر yt-dlp وFFmpeg، مع عرض الجودات التي يعيدها المحرك بدل قائمة وهمية ثابتة.
+- طابور تنزيل متتابع، إشعار تقدم، إلغاء، إعادة محاولة ومنع إدراج نفس الرابط والجودة مرتين أثناء نشاطهما.
+- سجل SQLite محلي يحفظ **رابط المصدر الأصلي** واسم الملف ونوعه وحجمه وتاريخه وحالته وموقعه.
+- مكتبة **شبكة أو قائمة**؛ بحث بالاسم أو الرابط، تصفية فيديو/صوت، فرز بالتاريخ/الاسم/الحجم، عرض تدريجي للقوائم الطويلة.
+- صور مصغرة من الملفات المحلية، مشغل صوت/فيديو داخل التطبيق، وفتح بمشغل خارجي عند الحاجة.
+- مشاركة الملف نفسه، نسخ رابط المصدر أو فتحه أو مشاركته أو تعديله.
+- استيراد ملفات صوت/فيديو موجودة عبر منتقي Android، مع إمكانية إضافة رابطها يدويًا. الاستيراد يضيف مرجعًا للملف ولا ينسخه أو ينقله.
+- تمييز الملفات التي حُذفت أو نُقلت خارج التطبيق، وتأكيد منفصل لحذف الملف أو إزالة سجله فقط. الملفات المستوردة لا تُحذف من الجهاز من خلال التطبيق.
+- تصدير روابط المكتبة وبياناتها إلى JSON، وتحديث محرك yt-dlp يدويًا من الإعدادات.
+- HTTPS محلي للواجهة باستخدام WebViewAssetLoader، منع صفحات الويب الخارجية من الوصول إلى الجسر الأصلي، وعدم تعطيل التحقق من شهادات TLS.
 
-- **100% Standalone On-Device Engine**: Runs entirely on the Android device using native embedded binaries (`youtubedl-android` + `FFmpeg`). No active computer or external server required!
-- **Ad-Free & Tracker-Free**: Clean, modern dark-mode user interface without annoying ads, pop-ups, or analytics.
-- **No Account Required**: Does not require user registration or logins.
-- **Android Share Sheet Integration**: Share any video link directly from the YouTube, Facebook, TikTok, or Instagram app into SnapClean for instant downloading.
-- **Direct Public Storage**: Automatically saves media to your phone's public `/sdcard/Download` folder and registers them with the Android **MediaStore** gallery so they appear immediately in your files and photos apps.
-- **Multiple Formats**: Download as **MP4 video** (original / 1080p / 720p / 480p) or extract clean **MP3 audio**.
+## تثبيت حزمة التعديلات
 
----
+انسخ **محتويات** الحزمة إلى جذر نسخة مستنسخة من `esshoo/3Esnap`، بجوار `gradlew` و`app`، ثم وافق على استبدال الملفات المتكررة. يجب نسخ المجلد المخفي `.github` أيضًا.
 
-## 📱 Supported Platforms
+الحزمة هي **overlay**: لا تحتوي على الملفات الأصلية غير المعدلة `LICENSE` و`gradlew` و`gradlew.bat` و`gradle/wrapper/gradle-wrapper.jar`. اتركها في المستودع كما هي. لا تحذف مجلد `.git` ولا تنشئ مشروعًا فارغًا من الحزمة وحدها.
 
-- **YouTube**: Videos, Shorts, and Audio.
-- **Facebook**: Public Videos and Reels.
-- **Instagram**: Public Reels and Posts via Direct CDN bypass.
-- **TikTok**: Public Videos.
+التفاصيل خطوة بخطوة: **[دليل الرفع والبناء بالعربية](docs/UPLOAD_AR.md)**.
 
----
+## إنشاء APK من GitHub
 
-## 🚀 Installation
+بعد الرفع إلى `main` يعمل workflow باسم **Build 3Esnap APK**. يمكن تشغيله يدويًا من Actions → Run workflow.
 
-You can download the pre-compiled APK directly from the repository:
-1. Navigate to [`release/SnapClean-v1.0.apk`](release/SnapClean-v1.0.apk).
-2. Install the APK on your Android device (Android 7.0+ / API 24+ recommended).
+عند نجاحه تظهر حزمة **`3Esnap-debug-APK-<run_number>`** في Artifacts، وبداخلها ملفات APK منفصلة لـ `arm64-v8a` و`armeabi-v7a` و`x86_64` ونسخة `universal`، مع بصمات SHA-256. اختر APK واحدًا فقط؛ هذه ملفات مكتملة مستقلة وليست split packages تتطلب تثبيتها معًا.
 
----
+بدون إعداد أسرار توقيع، يبني workflow **Debug APK موقعة تجريبيًا وقابلة للتثبيت**. لتوقيع إصدار ثابت توجد أسرار اختيارية موضحة في الدليل. عند تجهيزها يمكن إصدار ملفات Release، ونشرها تحت GitHub Releases عند دفع tag يبدأ بـ `v`.
 
-## 🛠️ Building from Source
+## المعرّفات والتحديثات
 
-### Prerequisites
-- JDK 17
-- Android SDK (API 34, Build Tools 34.0.0)
+| النسخة | Application ID |
+|---|---|
+| SnapClean الأصلي | `com.snapclean.app` |
+| 3Esnap Release | `com.threee.snap` |
+| 3Esnap Debug | `com.threee.snap.debug` |
 
-### Build Steps
-```bash
-git clone https://github.com/YOUR_USERNAME/SnapClean.git
-cd SnapClean
-./gradlew assembleDebug
+هذا الاختيار يسمح بالاحتفاظ بـ SnapClean أثناء اختبار 3Esnap. النسخة الجديدة لا تستبدل القديمة ولا تستورد سجلها تلقائيًا. Debug وRelease تطبيقان منفصلان أيضًا. تصدير JSON يحفظ الروابط للرجوع إليها، لكنه ليس آلية استعادة تلقائية للمكتبة في هذا الإصدار.
+
+## البناء المحلي
+
+المتطلبات: JDK 17، Android SDK Platform 35، Build Tools 35.0.0، واتصال لتنزيل التبعيات. Gradle Wrapper: 8.11.1؛ Android Gradle Plugin: 8.9.2؛ الحد الأدنى Android 7.0 / API 24. حافظ على تحديث Android System WebView على الأجهزة القديمة.
+
+```powershell
+# من جذر المستودع على Windows، بعد إعداد Android SDK/JDK
+.\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 ```
-The compiled APK will be located at:
-`app/build/outputs/apk/debug/app-debug.apk`
 
----
+```bash
+# Linux / macOS
+chmod +x gradlew
+./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+```
 
-## ⚖️ Legal Disclaimer
+المخرجات: `app/build/outputs/apk/debug/`. يمكن كتابة مسار SDK محليًا في `local.properties`؛ هذا الملف مستثنى من Git.
 
-> [!IMPORTANT]
-> **This software is provided for personal backup and educational purposes only.**
->
-> 1. This application is an open-source client utility designed to interface with public web content.
-> 2. The author does not host, control, or distribute any media files. All downloads are fetched directly from third-party public Content Delivery Networks (CDNs).
-> 3. Users are responsible for complying with the Terms of Service of respective platforms and applicable copyright laws in their jurisdictions. Do not use this tool to download copyrighted material without permission.
-> 4. All platform names and logos (YouTube, Facebook, Instagram, TikTok) are trademarks of their respective owners and are used here solely for descriptive and identification purposes.
+## الاختبارات والحدود
 
----
+انظر [الاختبارات](docs/TESTING.md)، [الحدود المعروفة](docs/KNOWN_LIMITATIONS.md)، [الخصوصية](docs/PRIVACY.md)، [التغييرات](docs/CHANGELOG.md)، و[المراجع التقنية](docs/SOURCES.md).
 
-## 📄 License
+المنصات المدعومة فعليًا تتبع إصدار yt-dlp وتغييرات المواقع وحالة الرابط. لا يوجد وعد بأن كل رابط في YouTube/Facebook/Instagram/TikTok سيعمل. لا يُضاف تسجيل دخول أو تجاوز DRM أو وصول لمحتوى خاص. استخدم التنزيل مع المحتوى الذي تملكه أو لديك إذن بتنزيله.
 
-This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**. See the [LICENSE](LICENSE) file for details.
+## الترخيص
+
+تظل هذه التعديلات ضمن **GPL-3.0**، مع الإبقاء على `LICENSE` الأصلي وذكر المشروع الأساسي. راجع [NOTICE](NOTICE.md) لترخيص المكونات والاعتمادات. لا توجد أي مفاتيح توقيع أو كلمات مرور ضمن المصدر.

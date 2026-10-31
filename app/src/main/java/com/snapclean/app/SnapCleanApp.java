@@ -1,26 +1,26 @@
 package com.snapclean.app;
 
 import android.app.Application;
-import android.util.Log;
+import android.content.Context;
+import android.content.Intent;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import com.yausername.youtubedl_android.YoutubeDL;
-import com.yausername.youtubedl_android.YoutubeDLException;
-import com.yausername.ffmpeg.FFmpeg;
-
-public class SnapCleanApp extends Application {
-    private static final String TAG = "SnapCleanApp";
-
-    @Override
-    public void onCreate() {
+/** Legacy class name retained; the installed product is 3Esnap with a new application ID. */
+public final class SnapCleanApp extends Application {
+    public static final String ACTION_CHANGED = BuildConfig.APPLICATION_ID + ".LIBRARY_CHANGED";
+    public DownloadStore store;
+    public MediaFiles files;
+    public final ExecutorService io = Executors.newSingleThreadExecutor();
+    public final ExecutorService inspector = Executors.newSingleThreadExecutor();
+    @Override public void onCreate() {
         super.onCreate();
-        new Thread(() -> {
-            try {
-                YoutubeDL.getInstance().init(this);
-                FFmpeg.getInstance().init(this);
-                Log.d(TAG, "YoutubeDL and FFmpeg initialized successfully on-device!");
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to initialize YoutubeDL engine: " + e.getMessage(), e);
-            }
-        }).start();
+        store = new DownloadStore(this);
+        // A process restart must not leave a fake 'downloading' row forever.
+        store.markInterrupted("توقف التطبيق قبل اكتمال التنزيل. اضغط إعادة المحاولة.");
+        files = new MediaFiles(this,store);
+        io.execute(() -> MediaFiles.deleteTree(new java.io.File(getCacheDir(),"work")));
     }
+    public static SnapCleanApp of(Context c) { return (SnapCleanApp)c.getApplicationContext(); }
+    public void changed() { sendBroadcast(new Intent(ACTION_CHANGED).setPackage(getPackageName())); }
 }
