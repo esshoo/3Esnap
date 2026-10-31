@@ -45,9 +45,11 @@ jobs:
         run: python3 tests/ui_smoke.py
       - name: Set up Gradle and validate the original wrapper
         uses: gradle/actions/setup-gradle@v4
+      - name: Set up Android SDK command-line tools
+        uses: android-actions/setup-android@v4
       - name: Android SDK 35
         run: |
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
           chmod +x gradlew
       # Debug keys are NOT production keys. The cache improves update compatibility,
       # but can be evicted. Use the documented signing secrets for a permanent identity.
