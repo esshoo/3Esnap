@@ -43,6 +43,8 @@ check('downloadDirectMedia(' not in java,'The legacy MP4-renamed-as-MP3 path mus
 check('WebViewAssetLoader' in java,'Use a scoped HTTPS asset origin for WebView')
 check('RELATIVE_PATH' in java and 'IS_PENDING' in java,'Use scoped public storage and pending-write protection')
 check('ClipData.newRawUri' in java,'Sharing must carry a temporary content URI grant')
+check(not re.search(r'\.setClipData\([^\n]*\)\.addFlags\(', java),
+      'Intent.setClipData returns void: apply permission flags in a separate statement')
 check('source_url TEXT' in java,'Missing durable source URL field')
 for ref in re.findall(r'R\.drawable\.([A-Za-z0-9_]+)',java):
     check((ROOT/f'app/src/main/res/drawable/{ref}.xml').exists(),f'Missing drawable {ref}')
@@ -53,6 +55,9 @@ for required in ['workflow_dispatch',':app:lintDebug',':app:assembleDebug','acti
     check(required in workflow,f'Workflow missing {required}')
 gradle=(ROOT/'app/build.gradle').read_text()
 check(not ('abiFilters' in gradle and 'splits {' in gradle),'Do not configure both ndk ABI filters and APK ABI splits')
+for legacy in ('kotlin-stdlib-jdk7', 'kotlin-stdlib-jdk8'):
+    check(f"exclude group: 'org.jetbrains.kotlin', module: '{legacy}'" in gradle,
+          f'Exclude redundant legacy Kotlin stdlib artifact: {legacy}')
 check('apksigner' in workflow,'Verify APK signatures before uploading build artifacts')
 check('KEYSTORE_PASSWORD' in workflow and 'secrets.ANDROID_KEYSTORE_PASSWORD' in workflow,'Use secrets for release signing')
 check(not list(ROOT.rglob('*.jks')) and not list(ROOT.rglob('*.keystore')),'Never distribute signing keys')

@@ -179,8 +179,9 @@ public final class PlayerActivity extends AppCompatActivity {
         autoStart=false;pause();
         try {
             Uri uri=app.files.shareUri(record);
-            Intent i=new Intent(Intent.ACTION_VIEW).setDataAndType(uri,record.mime)
-                    .setClipData(ClipData.newRawUri(record.title,uri)).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            Intent i=new Intent(Intent.ACTION_VIEW).setDataAndType(uri,record.mime);
+            i.setClipData(ClipData.newRawUri(record.title,uri));
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             startActivity(Intent.createChooser(i,"فتح الملف"));
         } catch(Exception ex) { Toast.makeText(this,"لم أجد مشغلاً مناسباً أو لا يمكن الوصول إلى الملف.",Toast.LENGTH_LONG).show(); }
     }

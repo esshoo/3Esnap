@@ -145,8 +145,9 @@ public final class NativeBridge {
             try {
                 Uri uri=app.files.shareUri(record);
                 Intent send=new Intent(Intent.ACTION_SEND).setType(record.mime)
-                        .putExtra(Intent.EXTRA_STREAM,uri).putExtra(Intent.EXTRA_TITLE,record.title)
-                        .setClipData(ClipData.newRawUri(record.title,uri)).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        .putExtra(Intent.EXTRA_STREAM,uri).putExtra(Intent.EXTRA_TITLE,record.title);
+                send.setClipData(ClipData.newRawUri(record.title,uri));
+                send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 activity.runOnUiThread(() -> {
                     try { activity.startActivity(Intent.createChooser(send,"مشاركة الملف")); }
                     catch(Exception ex) { error("لم أجد تطبيقاً مناسباً لمشاركة الملف."); }
