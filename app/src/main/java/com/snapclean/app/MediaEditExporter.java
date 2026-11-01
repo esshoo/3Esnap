@@ -116,6 +116,11 @@ public final class MediaEditExporter {
             String text=new String(tail.toByteArray(),StandardCharsets.UTF_8).replaceAll("[\\p{Cntrl}&&[^\\n]]"," ").trim();
             if(text.isEmpty()) text="رمز الخطأ "+result;
             return text.substring(0,Math.min(350,text.length()));
-        } finally {process=null;if(p.isAlive()) p.destroy();}
+        } finally {
+            process=null;
+            // Process.destroy() is safe even when the child has already exited;
+            // unlike Process.isAlive(), it is available on Android API 24.
+            p.destroy();
+        }
     }
 }

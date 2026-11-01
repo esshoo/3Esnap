@@ -50,6 +50,15 @@ check('class EditorActivity' in java and 'class MediaEditExporter' in java,'Miss
 check('class CropOverlayView' in java and 'selectedPixels()' in java,'Missing adjustable video crop selection')
 check('addEdited(' in java and 'source.sourceUrl' in java,'Edited clips should retain the original source URL')
 check('new ProcessBuilder(command)' in java,'FFmpeg execution must use argument arrays, not a shell command')
+# Android Lint regression checks: the minimum SDK is 24.
+exporter=(ROOT/'app/src/main/java/com/snapclean/app/MediaEditExporter.java').read_text(encoding='utf-8')
+editor=(ROOT/'app/src/main/java/com/snapclean/app/EditorActivity.java').read_text(encoding='utf-8')
+check('p.isAlive()' not in exporter, 'Process.isAlive() needs API 26; keep cleanup compatible with Android 7')
+check('p.destroy();' in exporter, 'Always release the native FFmpeg process')
+check(not re.search(r'setTypeface\(\s*null\s*,\s*\d+\s*\)', editor),
+      'Use Typeface style constants instead of literal integers (Android Lint WrongConstant)')
+check('Typeface.BOLD' in editor, 'Use named bold typeface styles')
+
 check('class EditPlan' in java and 'ffmpeg(' in java,'Missing tested trim/crop parameters')
 check('overflow-x:clip' in (ROOT/'app/src/main/assets/www/style.css').read_text(encoding='utf-8'), 'Responsive overflow safeguards missing')
 check('has-result' in js and 'newLinkButton' in html,'Download flow must collapse excessive vertical content')

@@ -3,6 +3,7 @@ package com.snapclean.app;
 import android.content.ClipData;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
@@ -121,7 +122,7 @@ public final class EditorActivity extends AppCompatActivity {
         WindowCompat.getInsetsController(getWindow(),root).setAppearanceLightNavigationBars(false);
         LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);header.setPadding(dp(12),dp(8),dp(12),dp(8));
         Button back=button("رجوع",false);back.setOnClickListener(v->onBackPressed());header.addView(back);
-        TextView heading=text(audioMode?"قص الصوت":"قص الفيديو",17);heading.setGravity(Gravity.CENTER);heading.setTypeface(null,1);
+        TextView heading=text(audioMode?"قص الصوت":"قص الفيديو",17);heading.setGravity(Gravity.CENTER);heading.setTypeface(null,Typeface.BOLD);
         header.addView(heading,new LinearLayout.LayoutParams(0,dp(48),1));
         header.addView(new View(this),new LinearLayout.LayoutParams(dp(70),dp(1)));
         root.addView(header);
@@ -163,7 +164,7 @@ public final class EditorActivity extends AppCompatActivity {
         setEnd.setOnClickListener(v->{int t=currentPosition();if(t-trimStart>=EditPlan.MIN_CLIP_MS){trimEnd=t;updateRange();}else Toast.makeText(this,"حرّك المؤشر بعد البداية.",Toast.LENGTH_SHORT).show();});
         selectedLength=text("",12);selectedLength.setTextColor(ACCENT);selectedLength.setGravity(Gravity.CENTER);body.addView(selectedLength);
         if(!audioMode) {
-            TextView cropLabel=text("قص إطار الفيديو (Crop)",15);cropLabel.setTypeface(null,1);body.addView(cropLabel);
+            TextView cropLabel=text("قص إطار الفيديو (Crop)",15);cropLabel.setTypeface(null,Typeface.BOLD);body.addView(cropLabel);
             toggleCrop=button("تفعيل قص الإطار",false);body.addView(toggleCrop,new LinearLayout.LayoutParams(-1,dp(46)));
             LinearLayout ratioRow=new LinearLayout(this);ratioRow.setPadding(0,dp(7),0,dp(5));body.addView(ratioRow);
             float[] ratios={0,1,9f/16f,16f/9f};String[] labels={"حر","1:1","9:16","16:9"};
