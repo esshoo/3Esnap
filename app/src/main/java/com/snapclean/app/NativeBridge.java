@@ -138,6 +138,16 @@ public final class NativeBridge {
             });
         });
     }
+    @JavascriptInterface public void edit(long id) {
+        app.io.execute(() -> {
+            DownloadRecord record=available(id);
+            if(record==null) return;
+            activity.runOnUiThread(() -> {
+                try { activity.startActivity(new Intent(activity,EditorActivity.class).putExtra("id",id)); }
+                catch(Exception ex) { error("تعذر فتح محرر المقاطع."); }
+            });
+        });
+    }
     @JavascriptInterface public void share(long id) {
         app.io.execute(() -> {
             DownloadRecord record=available(id);

@@ -77,6 +77,9 @@ public final class MainActivity extends AppCompatActivity {
         WebSettings settings=webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+        // Respect the device-width viewport instead of an oversized desktop layout.
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(false);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);

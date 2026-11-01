@@ -101,9 +101,14 @@ public final class PlayerActivity extends AppCompatActivity {
         seek=new SeekBar(this);seek.setEnabled(false);seek.setContentDescription("موضع التشغيل");seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         controls.addView(seek,new LinearLayout.LayoutParams(-1,dp(44)));
         LinearLayout buttons=new LinearLayout(this);buttons.setGravity(Gravity.CENTER);
-        play=button("جاري التجهيز…");play.setEnabled(false);play.setOnClickListener(v -> { if(isPlaying()) { autoStart=false;pause(); }else { autoStart=true;start(); } });buttons.addView(play);
-        Button external=button("فتح بمشغل آخر");external.setOnClickListener(v -> openExternal());buttons.addView(external);
-        controls.addView(buttons);root.addView(controls);
+        play=button("جاري التجهيز…");play.setEnabled(false);play.setOnClickListener(v -> { if(isPlaying()) { autoStart=false;pause(); }else { autoStart=true;start(); } });buttons.addView(play,new LinearLayout.LayoutParams(0,dp(50),1));
+        Button edit=button(isAudio ? "قص الصوت" : "قص الفيديو / Crop");
+        edit.setOnClickListener(v -> {autoStart=false;pause();startActivity(new Intent(this,EditorActivity.class).putExtra("id",record.id));});
+        buttons.addView(edit,new LinearLayout.LayoutParams(0,dp(50),1));
+        controls.addView(buttons);
+        Button external=button("فتح بمشغل آخر");external.setOnClickListener(v -> openExternal());
+        controls.addView(external,new LinearLayout.LayoutParams(-1,dp(48)));
+        root.addView(controls);
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar s,int progress,boolean fromUser) { if(fromUser) time.setText(clock(progress)+" / "+clock(duration())); }
             @Override public void onStartTrackingTouch(SeekBar s) { dragging=true; }
@@ -129,7 +134,7 @@ public final class PlayerActivity extends AppCompatActivity {
         handler.post(tick);
     }
     private TextView text(String value,int size) { TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(Color.WHITE);t.setPadding(dp(8),dp(6),dp(8),dp(6));return t; }
-    private Button button(String label) { Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setMinHeight(dp(48));return b; }
+    private Button button(String label) { Button b=new Button(this);b.setText(label);b.setTextSize(12);b.setAllCaps(false);b.setMinHeight(dp(48));b.setMinWidth(0);b.setMinimumWidth(0);return b; }
     private int dp(int value) { return (int)(value*getResources().getDisplayMetrics().density); }
     private void onPrepared() { prepared=true;play.setEnabled(true);seek.setEnabled(true);seekTo(restoredPosition);if(autoStart && resumed) start();else play.setText("تشغيل"); }
     private void onComplete() { autoStart=false;play.setText("تشغيل");seekTo(0);releaseAudioFocus();getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); }

@@ -46,6 +46,15 @@ check('ClipData.newRawUri' in java,'Sharing must carry a temporary content URI g
 check(not re.search(r'\.setClipData\([^\n]*\)\.addFlags\(', java),
       'Intent.setClipData returns void: apply permission flags in a separate statement')
 check('source_url TEXT' in java,'Missing durable source URL field')
+check('class EditorActivity' in java and 'class MediaEditExporter' in java,'Missing native trim/crop feature')
+check('class CropOverlayView' in java and 'selectedPixels()' in java,'Missing adjustable video crop selection')
+check('addEdited(' in java and 'source.sourceUrl' in java,'Edited clips should retain the original source URL')
+check('new ProcessBuilder(command)' in java,'FFmpeg execution must use argument arrays, not a shell command')
+check('class EditPlan' in java and 'ffmpeg(' in java,'Missing tested trim/crop parameters')
+check('overflow-x:clip' in (ROOT/'app/src/main/assets/www/style.css').read_text(encoding='utf-8'), 'Responsive overflow safeguards missing')
+check('has-result' in js and 'newLinkButton' in html,'Download flow must collapse excessive vertical content')
+check('android:name=".EditorActivity"' in (ROOT/'app/src/main/AndroidManifest.xml').read_text(), 'Editor activity not registered')
+
 for ref in re.findall(r'R\.drawable\.([A-Za-z0-9_]+)',java):
     check((ROOT/f'app/src/main/res/drawable/{ref}.xml').exists(),f'Missing drawable {ref}')
 for name in ['ic_launcher','ic_launcher_round']:

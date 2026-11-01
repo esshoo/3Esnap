@@ -106,6 +106,25 @@ public final class DownloadStore extends SQLiteOpenHelper {
         v.put("created_at",System.currentTimeMillis());
         return getWritableDatabase().insertOrThrow("downloads",null,v);
     }
+    /** A trimmed/cropped export is a new owned file; it never overwrites the original. */
+    public synchronized long addEdited(DownloadRecord source, String title, MediaFiles.Saved saved) {
+        if(source==null || saved==null) throw new IllegalArgumentException("Missing source or export");
+        ContentValues v=new ContentValues();
+        v.put("source_url",source.sourceUrl==null?"":source.sourceUrl);
+        v.put("title",title);
+        v.put("format",saved.mime.startsWith("audio/")?"audio":"video");
+        v.put("quality","edited");
+        v.put("uri",saved.uri);
+        v.put("mime",saved.mime);
+        v.put("filename",saved.name);
+        v.put("status","completed");
+        v.put("message","مقطع مُحرر من المكتبة");
+        v.put("progress",100);
+        v.put("size",saved.size);
+        v.put("created_at",System.currentTimeMillis());
+        v.put("imported",0);
+        return getWritableDatabase().insertOrThrow("downloads",null,v);
+    }
     public synchronized void setSource(long id, String url) {
         ContentValues v = new ContentValues(); v.put("source_url",url);
         getWritableDatabase().update("downloads",v,"_id=? AND status='completed'",new String[]{Long.toString(id)});

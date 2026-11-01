@@ -138,7 +138,7 @@ try:
         page.locator('[data-action="sourceAction-copy"]').click()
         assert page.evaluate("__calls.filter(c=>c.method==='sourceAction').at(-1).args")==[1,'copy']
         ok('Copy-source action sends the correct record ID to Android')
-        for action,method,args in [('share','share',[1]),('sourceAction-open','sourceAction',[1,'open']),('sourceAction-edit','sourceAction',[1,'edit']),('requestDelete','requestDelete',[1])]:
+        for action,method,args in [('edit','edit',[1]),('share','share',[1]),('sourceAction-open','sourceAction',[1,'open']),('sourceAction-edit','sourceAction',[1,'edit']),('requestDelete','requestDelete',[1])]:
             page.locator('[data-id="1"] [data-action="menu"]').click()
             page.locator(f'#sheetActions [data-action="{action}"]').click()
             last=page.evaluate(f"__calls.filter(c=>c.method==='{method}').at(-1).args")
@@ -195,6 +195,27 @@ try:
         expect(page.locator('#qualitySelect')).to_have_value('192')
         expect(page.locator('#qualitySelect')).to_be_disabled()
         ok('MP3 uses the audio path and a real conversion bitrate')
+        # Regression for the reported phone screenshot: media panel is compact and
+        # the entire preview/card/queue stay within the actual mobile viewport.
+        assert page.locator('#panel-download').evaluate('(n)=>n.classList.contains("has-result")')
+        assert page.locator('#panel-download .hero').is_hidden() and page.locator('#inspectForm').is_hidden()
+        page.evaluate("""() => {
+          document.querySelector('#resultTitle').textContent='عنوان فيديو عربي طويل جداً جداً يتضمن 1.7K views وملفات مطولة للتأكد من التفاف النصوص داخل الشاشة'.repeat(2);
+          document.querySelector('.job-info h3').textContent='اسم تنزيل طويل - '.repeat(35);
+        }""")
+        for width in (320,360,390,412):
+            page.set_viewport_size({'width':width,'height':780})
+            result=page.evaluate("""() => {
+              const item=document.querySelector('#resultCard');
+              const bounds=item.getBoundingClientRect();
+              return {scroll:document.documentElement.scrollWidth,window:innerWidth,left:bounds.left,right:bounds.right};
+            }""")
+            assert result['scroll']<=width+1 and result['left']>=-1 and result['right']<=width+1, f'Mobile overflow {width}: {result}'
+        page.screenshot(path=str(OUT/'preview-responsive-download.png'),full_page=True)
+        ok('Expanded media title, download card and queue stay within 320–412px phones')
+        page.set_viewport_size({'width':412,'height':932})
+
+        page.locator('#newLinkButton').click()
         page.locator('#urlInput').fill('https://example.com/new')
         expect(page.locator('#resultCard')).to_be_hidden()
         ok('Editing a URL invalidates previously fetched metadata')

@@ -1,316 +1,167 @@
 {
   "product": "3Esnap",
-  "source_version": "2.0.0",
-  "delivery_type": "modified-and-new-files overlay",
+  "version": "2.1.0",
   "base_repository": "https://github.com/esshoo/3Esnap",
-  "reviewed_git_tree_sha": "5bd31e1910d6f35570c46aebb98ad4786fa38c6c",
-  "retained_upstream_files_required": [
+  "base_commit": "5bc3301fb198698a83775d59891632b1d1f8d306",
+  "delivery_type": "source-only overlay (not installable APK)",
+  "android_sdk_built_locally": false,
+  "device_tested": false,
+  "github_base_run": "41197280633 (success for previous version 2.0.2)",
+  "local_checks": {
+    "structure": 110,
+    "pure_java_download": 40,
+    "pure_java_edit": 16,
+    "java_syntax_source_files": 15,
+    "node": 23,
+    "chromium_offline_dom": 27,
+    "desktop_ffmpeg_synthetic_test": true
+  },
+  "retained_originals": [
     "LICENSE",
     "gradlew",
     "gradlew.bat",
     "gradle/wrapper/gradle-wrapper.jar"
   ],
-  "remote_changes_performed": false,
-  "apk_built_locally": false,
-  "android_device_tested": false,
-  "local_checks": {
-    "structural_assertions": 96,
-    "pure_java_policy_assertions": 40,
-    "java_syntax_files": 11,
-    "node_tests": 23,
-    "mock_browser_interaction_checks": 26,
-    "browser_mode": "offline-dom"
-  },
-  "files": [
-    {
-      "path": ".gitattributes",
-      "bytes": 225,
-      "sha256": "0ac4265c8ca6224ea2e23232d5a63fbfe5d133788d9ec802199fd995b5ca7557"
-    },
-    {
-      "path": ".github/workflows/android.yml",
-      "bytes": 6188,
-      "sha256": "58f09403bbcc228ec64b6b477254baaba9c547ad67f100d3732125cd2d92b374"
-    },
-    {
-      "path": ".gitignore",
-      "bytes": 242,
-      "sha256": "6bf1e2f2debd2ca2b19479d0a3761d44d090834476ced315beadb76c1bf3f8c8"
-    },
-    {
-      "path": "NOTICE.md",
-      "bytes": 1181,
-      "sha256": "6173529072c46fc45cb7f2292686d68128f6b47357a9cb95ff3519a95dbf13c1"
-    },
+  "changed_files": [
     {
       "path": "README.md",
-      "bytes": 7501,
-      "sha256": "c95dcd05b9bdf48022185e996dc65531adfde457b0f20db2996c826bfce1fef1"
+      "size_bytes": 7983,
+      "sha256": "d23f235432a88f8182af90d19cf01faaf6a888cd9ad18e218f6543eaa2a6680a"
     },
     {
       "path": "app/build.gradle",
-      "bytes": 2046,
-      "sha256": "b38e788be2e9988e592d6ba9f5a1df75f164b0d25af6320ddc83855cc7a67504"
-    },
-    {
-      "path": "app/proguard-rules.pro",
-      "bytes": 170,
-      "sha256": "df36d3d8428eea38675b729234bc5d2ff4ca4bf9222b74b20424be9cb6d3d2b9"
+      "size_bytes": 2457,
+      "sha256": "1afc13a02b00ca5c20cc81f10a30f8a21edf21c54b2db3ed014e8d47d8e9ff38"
     },
     {
       "path": "app/src/main/AndroidManifest.xml",
-      "bytes": 2281,
-      "sha256": "13961de55da7d7ae11b5d710f9ef9c5e11ded10b42c2424a28f2f38b70b4b804"
+      "size_bytes": 2358,
+      "sha256": "f2dc7c6393baef6c99b24b7b9b63818d55bb08032fccc6b0990ca3e005471c1f"
     },
     {
       "path": "app/src/main/assets/www/app.js",
-      "bytes": 18786,
-      "sha256": "b28494a524e4972a58de5a8b6617df02a465dc6252ecf5c55bc9299ac86638a3"
-    },
-    {
-      "path": "app/src/main/assets/www/brand.svg",
-      "bytes": 568,
-      "sha256": "ccb183a87a42ea2564121789995f065b1db495dd9d110618c52467dcbe43e784"
-    },
-    {
-      "path": "app/src/main/assets/www/core.js",
-      "bytes": 2890,
-      "sha256": "2defefffc48a1613b5e11e490c8d7b783f798b152d2f0731e9e482718af921d3"
+      "size_bytes": 19265,
+      "sha256": "6bd54646db930d6848851d7dc210119b02987b041e2259107eb851f280ed25e9"
     },
     {
       "path": "app/src/main/assets/www/index.html",
-      "bytes": 13930,
-      "sha256": "702f9b4e6eaf280540e6e15502725c5a19227776027771a41f245ee9eb2cc610"
-    },
-    {
-      "path": "app/src/main/assets/www/media-placeholder.svg",
-      "bytes": 356,
-      "sha256": "41b2cd2edb81bf871825625f4323a13c3343117d54abe7ba4ce8f25532b09095"
+      "size_bytes": 14160,
+      "sha256": "36caa65e982c315df42c5f176400e77519a60e460f0959de97bff3eec52daf2f"
     },
     {
       "path": "app/src/main/assets/www/style.css",
-      "bytes": 17714,
-      "sha256": "21600e49c3ef7600921812c3d98fad041f552f0714a7772a10be8e04bda76017"
+      "size_bytes": 20100,
+      "sha256": "c3bc28a1f37aab37bfcb38c2fa7544cab9343b604e5f803ed54dd4506047ec02"
     },
     {
-      "path": "app/src/main/java/com/snapclean/app/DownloadPolicy.java",
-      "bytes": 4783,
-      "sha256": "a857d664779907a15bce26bf6a3fed2cb98ba3c81ccedc7170b3c20b90829f4c"
-    },
-    {
-      "path": "app/src/main/java/com/snapclean/app/DownloadRecord.java",
-      "bytes": 2141,
-      "sha256": "459c6df42059c8722da358f822339748d866061154f2a449b811fd1220260840"
-    },
-    {
-      "path": "app/src/main/java/com/snapclean/app/DownloadService.java",
-      "bytes": 14769,
-      "sha256": "f4af2c71c06c30a6dde270d0fd29025270b814dc66ef945e1a813f35bca2b8f0"
+      "path": "app/src/main/java/com/snapclean/app/CropOverlayView.java",
+      "size_bytes": 5441,
+      "sha256": "72b99c2b8a512b99bd71986ad88eef9b3bb65d7e7bda33b3730c05a7aa41459f"
     },
     {
       "path": "app/src/main/java/com/snapclean/app/DownloadStore.java",
-      "bytes": 7573,
-      "sha256": "a74b53c9fbbcf8ab066b163d06ff717e9156178b01af5b7b424f8f4b72c5237f"
+      "size_bytes": 8562,
+      "sha256": "f56900b6507829b180e34ddb53e396a16ff1b9903fce160143585bc2341c173c"
     },
     {
-      "path": "app/src/main/java/com/snapclean/app/EngineRuntime.java",
-      "bytes": 2863,
-      "sha256": "cfce111eeed6abe6672513e49dee045e17b3a9d7b2b0cb97799e41eabccaa4e8"
+      "path": "app/src/main/java/com/snapclean/app/EditPlan.java",
+      "size_bytes": 4079,
+      "sha256": "64a1bfb20d987d75a7ccd9c5ea019cd22f2a94d35cc9f74cc8e5df6717493f8a"
     },
     {
-      "path": "app/src/main/java/com/snapclean/app/Json.java",
-      "bytes": 535,
-      "sha256": "c5c136cef686c5c3c59aab29c13d4890f729962e667fc958f0073ca598a5c42a"
+      "path": "app/src/main/java/com/snapclean/app/EditorActivity.java",
+      "size_bytes": 21535,
+      "sha256": "a43612a201ce2e92634ec3204552dbded905ad112db101c29dca14294af8ddb4"
     },
     {
       "path": "app/src/main/java/com/snapclean/app/MainActivity.java",
-      "bytes": 15841,
-      "sha256": "30a0f6f452cf61f0474f0e6f7e8d00f516c5964b110c0f2a1bcee9322e26c4f4"
+      "size_bytes": 16018,
+      "sha256": "13f92bbbcc4fa973ebd8ff7a1fca5c01828736964be4b4be538f6059de7b7d2e"
     },
     {
-      "path": "app/src/main/java/com/snapclean/app/MediaFiles.java",
-      "bytes": 10957,
-      "sha256": "1c9af8122a726097f3317e1abd4c4425862a105f7b490ebd9e62d1daebd9a3c6"
+      "path": "app/src/main/java/com/snapclean/app/MediaEditExporter.java",
+      "size_bytes": 7115,
+      "sha256": "32053ed0e1e0304a9aea821e4092322cc9731d8b6e0873e306b1e59d92f81bcc"
     },
     {
       "path": "app/src/main/java/com/snapclean/app/NativeBridge.java",
-      "bytes": 15934,
-      "sha256": "0f26e9faefe2d4e6881cc6f428e940fe4399ee73a03dc475f22676d2a007c20b"
+      "size_bytes": 16400,
+      "sha256": "098ea018bd44ba840ab92f8f8137382184cca7e6002982332bbec4edd17d6631"
     },
     {
       "path": "app/src/main/java/com/snapclean/app/PlayerActivity.java",
-      "bytes": 12926,
-      "sha256": "54c9d23e3dee446889e196674c84b4d4f70f6e5ea6883696ba9742f434455aee"
+      "size_bytes": 13398,
+      "sha256": "a8086c6c13d7e18529ad7c7c56599cbcb6023bbb224c438e73ee67ea513aa417"
     },
     {
       "path": "app/src/main/java/com/snapclean/app/SnapCleanApp.java",
-      "bytes": 1327,
-      "sha256": "178fa56b6f1e1e273991743b396a82a6a865be6a577b7fe56e6abde269c72cd6"
+      "size_bytes": 1801,
+      "sha256": "2ae86a1c85e7b2e0b3efd79461e261fb1c82b5a2a5770d5b6d52498997e66905"
     },
     {
-      "path": "app/src/main/res/drawable/ic_brand_foreground.xml",
-      "bytes": 642,
-      "sha256": "c12e6d34c792378e70c8c58c7c09aa22748d21b7c342dc29e844a3d2142c8f9e"
-    },
-    {
-      "path": "app/src/main/res/drawable/ic_brand_mono.xml",
-      "bytes": 522,
-      "sha256": "9c2237211e8167561805fbd2283583cd4a81778bb27a691a876aadd1b55ecb2c"
-    },
-    {
-      "path": "app/src/main/res/drawable/ic_download_icon.xml",
-      "bytes": 303,
-      "sha256": "def43095f6b47438b513a59e8c18e0ff02577c9cd2830af717aae02bf7cc5366"
-    },
-    {
-      "path": "app/src/main/res/mipmap-anydpi/ic_launcher.xml",
-      "bytes": 732,
-      "sha256": "e0eb537019d387f9a9e263a56423ed6460604f65ca167925e0da64a7bbe28211"
-    },
-    {
-      "path": "app/src/main/res/mipmap-anydpi/ic_launcher_round.xml",
-      "bytes": 732,
-      "sha256": "e0eb537019d387f9a9e263a56423ed6460604f65ca167925e0da64a7bbe28211"
-    },
-    {
-      "path": "app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
-      "bytes": 214,
-      "sha256": "5e5601a879fce3d6d5789b7f0b6cf50e06aa843e62b7dae03d744c4907df02ed"
-    },
-    {
-      "path": "app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
-      "bytes": 214,
-      "sha256": "5e5601a879fce3d6d5789b7f0b6cf50e06aa843e62b7dae03d744c4907df02ed"
-    },
-    {
-      "path": "app/src/main/res/mipmap-anydpi-v33/ic_launcher.xml",
-      "bytes": 276,
-      "sha256": "cbac08f74e027f3e1b97816b166ebf1ee82a9555a06b4f84a59cd31d48fc70b5"
-    },
-    {
-      "path": "app/src/main/res/mipmap-anydpi-v33/ic_launcher_round.xml",
-      "bytes": 276,
-      "sha256": "cbac08f74e027f3e1b97816b166ebf1ee82a9555a06b4f84a59cd31d48fc70b5"
-    },
-    {
-      "path": "app/src/main/res/values/colors.xml",
-      "bytes": 113,
-      "sha256": "51054ec1507bfdf90fe03f8c2d64890d2f9edf04e3a9c27d91c78859169b593f"
-    },
-    {
-      "path": "app/src/main/res/values/strings.xml",
-      "bytes": 136,
-      "sha256": "e025cd026f9b820c6eb3d16306899638a3d2c8dc55d74cb3db107b7552f761ca"
-    },
-    {
-      "path": "app/src/main/res/values/themes.xml",
-      "bytes": 500,
-      "sha256": "a49564cbf5f0c85adaacb650c45d8c9df48e13ba56ec06595ba80d9585a5e567"
-    },
-    {
-      "path": "app/src/main/res/xml/file_paths.xml",
-      "bytes": 264,
-      "sha256": "0fd4003ca1dc2d9a042ac2f712f52dcb4c272dcbc5dfa5c9166247fc72e1477e"
-    },
-    {
-      "path": "app/src/test/java/com/snapclean/app/DownloadPolicyTest.java",
-      "bytes": 1645,
-      "sha256": "2c0c95cde8bc92a5353f05bc5dfc2a911cddd06a223174e90691ec2e1d2f5465"
-    },
-    {
-      "path": "build.gradle",
-      "bytes": 150,
-      "sha256": "6c9944b8c0e0744ada93073031f09ef1a3cfe48510fc995badaac5c0bc0649b9"
+      "path": "app/src/test/java/com/snapclean/app/EditPlanTest.java",
+      "size_bytes": 1007,
+      "sha256": "40eb0728a3bed8e2e6c9290647ece9795ab78a067e4cc64e5cc534d2c77a0689"
     },
     {
       "path": "docs/CHANGELOG.md",
-      "bytes": 3465,
-      "sha256": "520ec97f0e146754435d907c74e1665abc47dbe4e826c7bac82f53b9bdd1fc69"
+      "size_bytes": 5814,
+      "sha256": "cba9d1dc57313949bd2c8b239b018c0d51a5ed1a060e55b97d4afd4835a99615"
+    },
+    {
+      "path": "docs/EDITING_AR.md",
+      "size_bytes": 3722,
+      "sha256": "27653721d5b34c82e8feea91b763e196a5fe201a1466ac6f1b8c9e39dce12dab"
     },
     {
       "path": "docs/KNOWN_LIMITATIONS.md",
-      "bytes": 4112,
-      "sha256": "f768c82d47270416d89b2d05db76fa860dbc09588251c28edd879a1c192ca05d"
+      "size_bytes": 5786,
+      "sha256": "65a45adfb5d4893a8c099e35cbea066439d5e0b0b62df9a3dde608432657f1b8"
     },
     {
       "path": "docs/LOCAL_TEST_RESULTS.txt",
-      "bytes": 5194,
-      "sha256": "bf3de58e1098aa27582425527096f75b30506aa5452008f3e1962dcd6a653486"
-    },
-    {
-      "path": "docs/PRIVACY.md",
-      "bytes": 2395,
-      "sha256": "eb3ec53cc152703f113b630f17dbe05e00046449df35b3dd56162b3a95dc5b27"
-    },
-    {
-      "path": "docs/SOURCES.md",
-      "bytes": 1992,
-      "sha256": "5ff65acf96b945bb7ac012e7c01cbc7b69b6c33203a1803f969d40df233880f4"
+      "size_bytes": 1015,
+      "sha256": "f452f0b5d11562e0dde9d70f7b4a03ddbadc5f54d09994aa4d2090733f6b4623"
     },
     {
       "path": "docs/TESTING.md",
-      "bytes": 7371,
-      "sha256": "77f19cdf26cd468ff240bf53faf39a6a0a062030dd62d1df5622ee643c51705f"
+      "size_bytes": 10065,
+      "sha256": "efb9ac187ac6cc865db9a948b419d1082138fc55b896f5ea9104055831e70b88"
     },
     {
       "path": "docs/UPLOAD_AR.md",
-      "bytes": 9546,
-      "sha256": "b0fcf21e7f3627845878419ab5542654d02d411ec40f8eaadf925b25b7fa6172"
-    },
-    {
-      "path": "gradle/wrapper/gradle-wrapper.properties",
-      "bytes": 253,
-      "sha256": "697470de4156fe8a8f815967353d17fb1154e1c779b441135bd60ddaa4930c31"
-    },
-    {
-      "path": "gradle.properties",
-      "bytes": 106,
-      "sha256": "c3154e3d5f1a042cf9c144e754b436fd100b11dfa2a71a9a4fc5772f8f5c5661"
-    },
-    {
-      "path": "settings.gradle",
-      "bytes": 278,
-      "sha256": "ea0eb7cfa74d24a969548d06acf8568576b9aea7f9f51850d06addb67269e15d"
+      "size_bytes": 9887,
+      "sha256": "678875917b9ef1ae1ccb72a551c2276988ece3dfbe3b1cc64e0333977ed101b8"
     },
     {
       "path": "tests/fixtures/bridge-mock.js",
-      "bytes": 2867,
-      "sha256": "f390d36c8e23b56eecfb99f9dfbeb95ef162ff63cf204bb0c449a6016af56a0b"
+      "size_bytes": 2874,
+      "sha256": "135d7125bf8ec2eb5cbae1aa01a08bac18cfb15743f0d6c87920d380e784b50f"
     },
     {
       "path": "tests/ui_smoke.py",
-      "bytes": 15665,
-      "sha256": "796cd6071c0ea68f83509a2413c0c0f5da531e7bb9cc91f9274a78552986b106"
+      "size_bytes": 17284,
+      "sha256": "e8281e39c20a0117f6c647a920a228f87b368007b586fee5d48e02b37b222be9"
     },
     {
-      "path": "tests/web.test.cjs",
-      "bytes": 3478,
-      "sha256": "53f0938b41241c2271daa4cbf300d83168956a6587a80f5260dd0507c1b64ac1"
-    },
-    {
-      "path": "tools/ParseJava.java",
-      "bytes": 1293,
-      "sha256": "9b7255795fb710df581b06017b8dda7ba5320b8c4fca79eb360129c6e806e8f5"
-    },
-    {
-      "path": "tools/PolicySelfTest.java",
-      "bytes": 3676,
-      "sha256": "5d82488578696521fa03cb6c7ba9fa15c6915f6a78878fd48c3424a1730d3802"
+      "path": "tools/EditPlanSelfTest.java",
+      "size_bytes": 2110,
+      "sha256": "504fdbc01e1a91a3536c0499157207238a291ab44510e9843c928bc9fdfb4aa1"
     },
     {
       "path": "tools/check-java.sh",
-      "bytes": 367,
-      "sha256": "152ad32fc938e6d5fa3ba35e4848954ad702035367f6a1bbfedbce6c6b59f3c3"
+      "size_bytes": 567,
+      "sha256": "ca2e6f3d84dad573c22ca01fc979c6fe8c3e73c4453a962e03de6d66eaaeeaab"
     },
     {
       "path": "tools/check_project.py",
-      "bytes": 3812,
-      "sha256": "daf43c42e1921b83fd1dc31fd129ca6162a851db75aae4e9d923bf43a7e22e26"
-    },
-    {
-      "path": "tools/package_apks.py",
-      "bytes": 1306,
-      "sha256": "98d5f7077ef30d02688a96a8a2a91dd64d8c5ae8bcb7455329288fdc0acbd5ad"
+      "size_bytes": 5103,
+      "sha256": "ae9aab7dca3320744e2bda7accfad8cd567a52a299159b7381dc78248f7a284f"
     }
+  ],
+  "warnings": [
+    "New native editor has not been compiled against Android SDK in local environment.",
+    "FFmpeg crop/export on real Android device remains untested.",
+    "Overwrite source files on an existing Git clone; do not use the overlay as a complete repository."
   ]
 }
