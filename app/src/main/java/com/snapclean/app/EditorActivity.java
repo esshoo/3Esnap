@@ -44,9 +44,12 @@ public final class EditorActivity extends AppCompatActivity {
     private DownloadRecord record;
     private VideoView video;
     private MediaPlayer audio;
-    private CropOverlayView crop;
+    private EditPlan.Crop selectedCrop;
+    private static final int REQUEST_CROP=301;
+    private Button cropButton;
+    private TextView cropStatus;
     private SeekBar seek,startSeek,endSeek;
-    private Button play,save,share,toggleCrop;
+    private Button play,save,share;
     private TextView playerTime,startLabel,endLabel,selectedLength,status;
     private ProgressBar spinner;
     private boolean prepared,playingPreview,busy,audioMode,resumed,updating;
@@ -93,9 +96,13 @@ public final class EditorActivity extends AppCompatActivity {
         trimStart=state==null?0:state.getInt("start",0);
         trimEnd=state==null?durationMs:Math.min(durationMs,state.getInt("end",durationMs));
         restoredPosition=state==null?0:state.getInt("position",0);
+        if(state!=null && state.getInt("cropWidth",0)>0) {
+            try { selectedCrop=new EditPlan.Crop(state.getInt("cropX"),state.getInt("cropY"),
+                    state.getInt("cropWidth"),state.getInt("cropHeight")); }
+            catch(IllegalArgumentException ignored) {selectedCrop=null;}
+        }
         createLayout();
         if(!audioMode) {
-            crop.setVideoSize(videoWidth,videoHeight);
             video.setOnPreparedListener(mp -> onPrepared());
             video.setOnErrorListener((mp,what,extra)->{playbackError();return true;});
             video.setVideoURI(Uri.parse(record.uri));
@@ -109,6 +116,8 @@ public final class EditorActivity extends AppCompatActivity {
             } catch(Exception ex) {playbackError();}
         }
         handler.post(tick);
+        if(!audioMode && state==null && getIntent().getBooleanExtra("openCrop",false))
+            getWindow().getDecorView().post(this::openCropPage);
     }
     private void createLayout() {
         WindowCompat.setDecorFitsSystemWindows(getWindow(),false);
@@ -137,7 +146,6 @@ public final class EditorActivity extends AppCompatActivity {
             stage.addView(art,new FrameLayout.LayoutParams(-1,-1));
         } else {
             video=new VideoView(this);stage.addView(video,new FrameLayout.LayoutParams(-1,-1));
-            crop=new CropOverlayView(this);crop.setActive(false);stage.addView(crop,new FrameLayout.LayoutParams(-1,-1));
         }
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(16),dp(12),dp(16),dp(10));
@@ -165,21 +173,17 @@ public final class EditorActivity extends AppCompatActivity {
         selectedLength=text("",12);selectedLength.setTextColor(ACCENT);selectedLength.setGravity(Gravity.CENTER);body.addView(selectedLength);
         if(!audioMode) {
             TextView cropLabel=text("قص إطار الفيديو (Crop)",15);cropLabel.setTypeface(null,Typeface.BOLD);body.addView(cropLabel);
-            toggleCrop=button("تفعيل قص الإطار",false);body.addView(toggleCrop,new LinearLayout.LayoutParams(-1,dp(46)));
-            LinearLayout ratioRow=new LinearLayout(this);ratioRow.setPadding(0,dp(7),0,dp(5));body.addView(ratioRow);
-            float[] ratios={0,1,9f/16f,16f/9f};String[] labels={"حر","1:1","9:16","16:9"};
-            Button[] buttons=new Button[4];
-            for(int i=0;i<labels.length;i++) {
-                final float ratio=ratios[i];Button b=button(labels[i],false);buttons[i]=b;
-                LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(44),1);if(i>0) lp.setMarginStart(dp(5));ratioRow.addView(b,lp);
-                b.setEnabled(false);
-                b.setOnClickListener(v->{crop.setAspect(ratio);for(Button other:buttons)style(other,false);style(b,true);});
-            }
-            style(buttons[0],true);
-            toggleCrop.setOnClickListener(v->{boolean next=!crop.isActive();crop.setActive(next);toggleCrop.setText(next?"إلغاء قص الإطار":"تفعيل قص الإطار");for(Button button:buttons)button.setEnabled(next);});
-            TextView tip=text("اسحب المستطيل لتغيير مكان القص، واسحب المقبض السفلي لتغيير مساحته.",11);
-            tip.setTextColor(0xffa2b1c4);body.addView(tip);
-            if(videoWidth<16 || videoHeight<16) {toggleCrop.setEnabled(false);toggleCrop.setText("قص الإطار غير متاح لهذا الفيديو");}
+            cropStatus=text("",12);cropStatus.setTextColor(0xffb8c8d7);body.addView(cropStatus);
+            LinearLayout controls=new LinearLayout(this);controls.setGravity(Gravity.CENTER_VERTICAL);
+            cropButton=button("تحديد مساحة القص",false);
+            controls.addView(cropButton,new LinearLayout.LayoutParams(0,dp(50),2));
+            Button clear=button("إلغاء القص",false);
+            LinearLayout.LayoutParams cl=new LinearLayout.LayoutParams(0,dp(50),1);cl.setMarginStart(dp(8));controls.addView(clear,cl);
+            body.addView(controls);
+            cropButton.setOnClickListener(v->openCropPage());
+            clear.setOnClickListener(v->{selectedCrop=null;updateCropStatus();});
+            if(videoWidth<16 || videoHeight<16) {cropButton.setEnabled(false);cropButton.setText("قص الإطار غير متاح");}
+            updateCropStatus();
         }
         LinearLayout bottom=new LinearLayout(this);bottom.setPadding(dp(12),dp(8),dp(12),dp(12));bottom.setGravity(Gravity.CENTER_VERTICAL);
         bottom.setBackgroundColor(PANEL);
@@ -222,10 +226,44 @@ public final class EditorActivity extends AppCompatActivity {
         startLabel.setText(clock(trimStart));endLabel.setText(clock(trimEnd));
         selectedLength.setText("المدة المحددة: "+clock(trimEnd-trimStart));updating=false;
     }
+    private void openCropPage() {
+        if(busy || record==null || videoWidth<16 || videoHeight<16)return;
+        pause();
+        Intent intent=new Intent(this,CropActivity.class).putExtra("id",record.id)
+                .putExtra("videoWidth",videoWidth).putExtra("videoHeight",videoHeight)
+                .putExtra("durationMs",durationMs).putExtra("positionMs",currentPosition());
+        if(selectedCrop!=null) {
+            intent.putExtra("cropX",selectedCrop.x).putExtra("cropY",selectedCrop.y)
+                    .putExtra("cropWidth",selectedCrop.width).putExtra("cropHeight",selectedCrop.height);
+        }
+        startActivityForResult(intent,REQUEST_CROP);
+    }
+    private void updateCropStatus() {
+        if(cropStatus==null)return;
+        if(selectedCrop==null) {
+            cropStatus.setText("بدون قص إطار. اضغط «تحديد مساحة القص» لفتح شاشة مستقلة واختيار نسبة 1:1 أو 9:16 أو 16:9.");
+            if(cropButton!=null)cropButton.setText("تحديد مساحة القص");
+        } else {
+            cropStatus.setText("✓ مساحة القص المحددة: "+selectedCrop.width+" × "+selectedCrop.height+" بكسل. ستُطبق عند حفظ المقطع.");
+            if(cropButton!=null)cropButton.setText("تعديل مساحة القص");
+        }
+    }
+    @Override @SuppressWarnings("deprecation") protected void onActivityResult(int requestCode,int resultCode,Intent data) {
+        super.onActivityResult(requestCode,resultCode,data);
+        if(requestCode!=REQUEST_CROP || resultCode!=RESULT_OK || data==null)return;
+        try {
+            EditPlan.Crop next=new EditPlan.Crop(data.getIntExtra("cropX",0),data.getIntExtra("cropY",0),
+                    data.getIntExtra("cropWidth",0),data.getIntExtra("cropHeight",0));
+            if(next.x+next.width>videoWidth || next.y+next.height>videoHeight)
+                throw new IllegalArgumentException("مساحة القص خارج الفيديو.");
+            selectedCrop=next;updateCropStatus();
+            Toast.makeText(this,"تم تطبيق مساحة القص. احفظ الفيديو للحصول على النسخة الجديدة.",Toast.LENGTH_SHORT).show();
+        } catch(IllegalArgumentException ex) {Toast.makeText(this,ex.getMessage(),Toast.LENGTH_LONG).show();}
+    }
     private void exportClip(boolean shareAfter) {
         if(busy)return;
         EditPlan.Clip selected;EditPlan.Crop selection=null;
-        try {selected=EditPlan.clip(trimStart,trimEnd,durationMs);if(!audioMode && crop.isActive())selection=crop.selectedPixels();}
+        try {selected=EditPlan.clip(trimStart,trimEnd,durationMs);if(!audioMode)selection=selectedCrop;}
         catch(IllegalArgumentException ex){Toast.makeText(this,ex.getMessage(),Toast.LENGTH_LONG).show();return;}
         pause();busy=true;save.setEnabled(false);share.setEnabled(false);play.setEnabled(false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -277,7 +315,12 @@ public final class EditorActivity extends AppCompatActivity {
     private static String clock(int ms){int s=Math.max(0,ms)/1000;return s>=3600?String.format(Locale.US,"%d:%02d:%02d",s/3600,s/60%60,s%60):String.format(Locale.US,"%02d:%02d",s/60,s%60);}
     @Override protected void onResume(){super.onResume();resumed=true;}
     @Override protected void onPause(){pause();resumed=false;super.onPause();}
-    @Override protected void onSaveInstanceState(@NonNull Bundle state){state.putInt("start",trimStart);state.putInt("end",trimEnd);state.putInt("position",currentPosition());super.onSaveInstanceState(state);}
+    @Override protected void onSaveInstanceState(@NonNull Bundle state){
+        state.putInt("start",trimStart);state.putInt("end",trimEnd);state.putInt("position",currentPosition());
+        if(selectedCrop!=null){state.putInt("cropX",selectedCrop.x);state.putInt("cropY",selectedCrop.y);
+            state.putInt("cropWidth",selectedCrop.width);state.putInt("cropHeight",selectedCrop.height);}
+        super.onSaveInstanceState(state);
+    }
     @Override public void onBackPressed(){if(!busy){super.onBackPressed();return;}new AlertDialog.Builder(this)
             .setTitle("جارٍ إنشاء المقطع").setMessage("الرجوع الآن يلغي عملية القص، والملف الأصلي لن يتأثر.")
             .setPositiveButton("إلغاء القص والرجوع",(d,w)->{if(exporter!=null)exporter.cancel();finish();})

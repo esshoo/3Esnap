@@ -1,13 +1,28 @@
-3Esnap v2.1.0 local source validation — 2026-11-01
-Base repository confirmed at commit 5bc3301fb198698a83775d59891632b1d1f8d306 (v2.0.2, CI run 41197280633 success).
-- Structural/security assertions: 110 PASS
-- Pure Java download policy assertions: 40 PASS
-- Media edit policy / FFmpeg argument assertions: 16 PASS
-- Java 17 parser: 15 Android source files parse successfully (NOT Android compiler)
-- Node.js browser logic tests: 23 PASS
-- Chromium offline DOM mock tests: 27 PASS, including 320/360/390/412px overflow regression
-- Desktop FFmpeg synthetic media smoke test: H.264/AAC 180x180 crop output + MP3 trim output succeeded
-- Browser HTTP origin test locally: BLOCKED (sandbox denies localhost navigation); offline-dom mode used
-- Android Gradle build: NOT RUN in local environment (Android SDK unavailable)
-- Android device playback, output file sharing, FFmpeg bundled binary and real crop: NOT TESTED
-Run actual GitHub Actions and install signed debug APK to verify native features before production.
+3Esnap v2.2.0 — Technical verification report
+Based on esshoo/3Esnap main at c335cc8195d2b56c8c087d06582c191d3e443a84 (2026-11-01)
+
+Implemented:
+- Additive JSON backup restoration (export schemaVersion 1 and 2), local link-only placeholders, duplicate protection, matching imported files, re-download from stored sources.
+- Separate native Android crop activity, draggable/repositionable rectangular selection with four corner handles, Free/1:1/9:16/16:9 aspect ratios, selectable frame preview, apply result to the existing FFmpeg export.
+- Direct Crop entrypoints from media-player and library options.
+- Version 2.2.0 / versionCode 22000+GITHUB_RUN_NUMBER, preserved application IDs for debug and release.
+
+Verified locally:
+- 126 project structure/security checks: PASS.
+- 40 DownloadPolicy assertions: PASS.
+- 17 BackupRules assertions: PASS.
+- 16 EditPlan/media crop assertions: PASS.
+- Java 17 syntax parsing for 17 Android source files: PASS (NOT Android compilation).
+- 23 JavaScript unit tests: PASS.
+- 28 Chromium UI interaction tests with mocked Android bridge: PASS (offline DOM mode).
+- FFmpeg CLI synthetic test: PASS; 640x360 source -> 320x180 cropped 1-second segment.
+
+Not tested in current environment:
+- Android build / Lint for the new code (Android SDK is unavailable here).
+- Actual JSON restoration in Android SQLite on a phone; Android file picker permissions.
+- Native CropActivity touch gestures & FFmpeg export on physical Android devices.
+- Signature compatibility with the APK currently installed on the user's phone.
+
+Important:
+- A JSON export does not contain media files. Keep the exported backup and do not uninstall the current app for testing.
+- An in-place Android update requires the same package ID, same signing key and higher versionCode. The existing GitHub debug cache is not a permanent signing solution. Use a stable signed Release build and restore JSON when switching package identity.

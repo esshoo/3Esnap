@@ -102,9 +102,15 @@ public final class PlayerActivity extends AppCompatActivity {
         controls.addView(seek,new LinearLayout.LayoutParams(-1,dp(44)));
         LinearLayout buttons=new LinearLayout(this);buttons.setGravity(Gravity.CENTER);
         play=button("جاري التجهيز…");play.setEnabled(false);play.setOnClickListener(v -> { if(isPlaying()) { autoStart=false;pause(); }else { autoStart=true;start(); } });buttons.addView(play,new LinearLayout.LayoutParams(0,dp(50),1));
-        Button edit=button(isAudio ? "قص الصوت" : "قص الفيديو / Crop");
+        Button edit=button(isAudio ? "قص الصوت" : "قص المدة");
         edit.setOnClickListener(v -> {autoStart=false;pause();startActivity(new Intent(this,EditorActivity.class).putExtra("id",record.id));});
         buttons.addView(edit,new LinearLayout.LayoutParams(0,dp(50),1));
+        if(!isAudio) {
+            Button crop=button("قص الإطار");
+            crop.setOnClickListener(v -> {autoStart=false;pause();startActivity(new Intent(this,EditorActivity.class)
+                    .putExtra("id",record.id).putExtra("openCrop",true));});
+            buttons.addView(crop,new LinearLayout.LayoutParams(0,dp(50),1));
+        }
         controls.addView(buttons);
         Button external=button("فتح بمشغل آخر");external.setOnClickListener(v -> openExternal());
         controls.addView(external,new LinearLayout.LayoutParams(-1,dp(48)));

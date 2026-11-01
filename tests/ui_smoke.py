@@ -143,6 +143,10 @@ try:
             page.locator(f'#sheetActions [data-action="{action}"]').click()
             last=page.evaluate(f"__calls.filter(c=>c.method==='{method}').at(-1).args")
             assert last==args
+        page.locator('[data-id="1"] [data-action="menu"]').click()
+        page.locator('#sheetActions [data-action="crop"]').click()
+        assert page.evaluate("__calls.filter(c=>c.method==='crop').at(-1).args")==[1]
+        ok('Crop is a separate, one-tap action in the video file menu')
         ok('Share-file, open-source, edit-source and deletion actions call their native entrypoints')
         page.locator('[data-id="1"] .media-play').click()
         assert page.evaluate("__calls.filter(c=>c.method==='play').at(-1).args")==[1]
@@ -167,8 +171,9 @@ try:
         expect(page.locator('html')).to_have_attribute('data-theme','light')
         page.locator('#exportButton').click()
         page.locator('#settingsImport').click()
-        assert page.evaluate("__calls.some(c=>c.method==='exportLibrary') && __calls.some(c=>c.method==='importFiles')")
-        ok('Settings routes link export and old-file import to Android')
+        page.locator('#importBackupButton').click()
+        assert page.evaluate("__calls.some(c=>c.method==='exportLibrary') && __calls.some(c=>c.method==='importFiles') && __calls.some(c=>c.method==='importLibraryBackup')")
+        ok('Settings exposes separate JSON backup restoration and old media imports')
         load_page(reload=True)
         expect(page.locator('html')).to_have_attribute('data-theme','light')
         expect(page.locator('#panel-settings')).to_be_visible()
@@ -233,8 +238,11 @@ try:
         page.locator('[data-id="1"] [data-action="menu"]').click()
         expect(page.locator('#sheetActions [data-action="share"]')).to_be_disabled()
         expect(page.locator('[data-action="sourceAction-copy"]')).to_be_enabled()
-        page.keyboard.press('Escape')
-        ok('Missing files retain source links while unavailable file operations are disabled')
+        expect(page.locator('[data-action="redownloadRestored"]')).to_be_enabled()
+        page.locator('[data-action="redownloadRestored"]').click()
+        assert page.evaluate("__calls.filter(c=>c.method==='redownloadRestored').at(-1).args")==[1]
+        expect(page.locator('[data-id="1"] .card-play-button')).to_have_text('إعادة تنزيل')
+        ok('Missing files retain source links and offer re-download without a video URI')
         page.evaluate('__records=[]; __snapshot()')
         expect(page.locator('#libraryEmpty')).to_be_visible()
         expect(page.locator('#libraryGrid .media-card')).to_have_count(0)

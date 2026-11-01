@@ -95,7 +95,7 @@
     switch(event.type) {
       case 'snapshot':
         state.rows=Array.isArray(d.items)?d.items:[];
-        $('appVersion').textContent=`${d.version || '2.1.0'}${d.buildType==='debug'?' · DEBUG':''}`;
+        $('appVersion').textContent=`${d.version || '2.2.0'}${d.buildType==='debug'?' · DEBUG':''}`;
         $('engineVersion').textContent=d.engineVersion || 'المحرك المرفق';
         renderLibrary();renderQueue();break;
       case 'inspect': if(d.requestId===state.requestId) renderResult(d);break;
@@ -123,9 +123,12 @@
     const body=el('div','card-body');const title=el('h3','card-title',record.title || record.filename);title.title=record.filename || record.title;
     const meta=el('div','card-meta');meta.append(el('bdi','',C.formatBytes(record.size)),el('span','',formatDate(record.createdAt)));
     const source=el('div',`saved-link${record.missing?' missing':''}`);
-    source.append(icon(record.missing?'close':'link'),el('span','',record.missing?'الملف غير متاح':record.sourceUrl?'المصدر محفوظ':'بدون رابط مصدر'));
+    source.append(icon(record.missing?'close':'link'),el('span','',record.missing?(record.sourceUrl?'الرابط محفوظ · الملف يحتاج إعادة تنزيل':'الملف غير متاح'):record.sourceUrl?'المصدر محفوظ':'بدون رابط مصدر'));
     const actions=el('div','card-actions');
-    const play=actionButton('تشغيل الملف','play',()=>call('play',Number(record.id)),'card-play-button');play.append(el('span','','تشغيل'));play.disabled=Boolean(record.missing);
+    const recover=Boolean(record.missing && record.sourceUrl);
+    const play=actionButton(recover?'إعادة تنزيل الملف من رابطه':'تشغيل الملف',recover?'download':'play',
+        ()=>call(recover?'redownloadRestored':'play',Number(record.id)),'card-play-button');
+    play.append(el('span','',recover?'إعادة تنزيل':'تشغيل'));play.disabled=Boolean(record.missing && !recover);
     const share=actionButton('مشاركة الملف','share',()=>call('share',Number(record.id)));share.disabled=Boolean(record.missing);share.dataset.action='share';actions.append(play,share);
     body.append(title,meta,source,actions);card.append(cover,body);return card;
   }
@@ -178,7 +181,9 @@
     $('sheetSource').textContent=record.sourceUrl || 'لم يُحفظ رابط مصدر لهذا الملف';
     const args=[Number(id)],actions=$('sheetActions');actions.replaceChildren(
       sheetAction('تشغيل داخل التطبيق','play','play',args,false,Boolean(record.missing)),
-      sheetAction(record.format==='audio'?'قص جزء من الصوت':'قص الفيديو / قص الإطار','edit','edit',args,false,Boolean(record.missing)),
+      sheetAction(record.format==='audio'?'قص جزء من الصوت':'قص المدة من الفيديو','edit','edit',args,false,Boolean(record.missing)),
+      ...(record.format==='video' ? [sheetAction('قص إطار الفيديو (Crop)','edit','crop',args,false,Boolean(record.missing))] : []),
+      ...(record.missing && record.sourceUrl ? [sheetAction('إعادة تنزيل من الرابط المحفوظ','download','redownloadRestored',args)] : []),
       sheetAction('مشاركة الملف','share','share',args,false,Boolean(record.missing)),
       sheetAction('نسخ رابط المصدر','copy','sourceAction',[Number(id),'copy'],false,!record.sourceUrl),
       sheetAction('الانتقال إلى المصدر','external','sourceAction',[Number(id),'open'],false,!record.sourceUrl),
@@ -212,6 +217,7 @@
   $('importButton').addEventListener('click',()=>call('importFiles'));$('settingsImport').addEventListener('click',()=>call('importFiles'));
   $('refreshButton').addEventListener('click',()=>{if(call('refreshLibrary')) toast('جاري التحقق من الملفات وتحديث المكتبة…');});
   $('exportButton').addEventListener('click',()=>call('exportLibrary'));
+  $('importBackupButton').addEventListener('click',()=>call('importLibraryBackup'));
   $('updateEngine').addEventListener('click',()=>call('updateEngine'));
   $('themeSelect').addEventListener('change',()=>applyTheme($('themeSelect').value));
   $('themeQuick').addEventListener('click',()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));

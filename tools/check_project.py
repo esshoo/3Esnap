@@ -59,6 +59,28 @@ check(not re.search(r'setTypeface\(\s*null\s*,\s*\d+\s*\)', editor),
       'Use Typeface style constants instead of literal integers (Android Lint WrongConstant)')
 check('Typeface.BOLD' in editor, 'Use named bold typeface styles')
 
+check('importLibraryBackup()' in java and 'restoreBackup(Uri document)' in java,
+      'JSON restore must be separate from media-file import')
+check('app.store.restore(rows)' in java and 'schema!=1 && schema!=2' in java,
+      'JSON restore must support v1 exports and v2 backups')
+check('db.beginTransaction();' in java and 'db.setTransactionSuccessful();' in java,
+      'Restore must merge atomically without clearing SQLite')
+check('class BackupRules' in java and 'MAX_BYTES' in java and 'MAX_ITEMS' in java,
+      'Backups must be size and count bounded')
+check('requeueRestored' in java and 'redownloadRestored' in java,
+      'Recovered URL-only rows must support re-downloading in place')
+check('importBackupButton' in html and 'importLibraryBackup' in js,
+      'Separate import-JSON UI must be reachable')
+check('class CropActivity' in java and 'setSelection(' in java,
+      'Dedicated crop page must be present')
+check('android:name=".CropActivity"' in (ROOT/'app/src/main/AndroidManifest.xml').read_text(),
+      'Dedicated crop activity must be registered')
+check('getScaledFrameAtTime' in java and 'getFrameAtTime' in java,
+      'Crop preview must support Android 7 and newer')
+check('new Intent(this,CropActivity.class)' in java and 'selectedCrop=next' in java and 'openCrop' in java,
+      'Crop selection must flow back into the export path')
+check('gesture=2' in java and 'gesture=3' in java and 'gesture=4' in java and 'gesture=5' in java,
+      'All four crop corners should be resizable')
 check('class EditPlan' in java and 'ffmpeg(' in java,'Missing tested trim/crop parameters')
 check('overflow-x:clip' in (ROOT/'app/src/main/assets/www/style.css').read_text(encoding='utf-8'), 'Responsive overflow safeguards missing')
 check('has-result' in js and 'newLinkButton' in html,'Download flow must collapse excessive vertical content')

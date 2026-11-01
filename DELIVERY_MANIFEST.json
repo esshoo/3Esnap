@@ -1,167 +1,66 @@
 {
-  "product": "3Esnap",
-  "version": "2.1.0",
-  "base_repository": "https://github.com/esshoo/3Esnap",
-  "base_commit": "5bc3301fb198698a83775d59891632b1d1f8d306",
-  "delivery_type": "source-only overlay (not installable APK)",
-  "android_sdk_built_locally": false,
-  "device_tested": false,
-  "github_base_run": "41197280633 (success for previous version 2.0.2)",
-  "local_checks": {
-    "structure": 110,
-    "pure_java_download": 40,
-    "pure_java_edit": 16,
-    "java_syntax_source_files": 15,
-    "node": 23,
-    "chromium_offline_dom": 27,
-    "desktop_ffmpeg_synthetic_test": true
+  "project": "3Esnap",
+  "version": "2.2.0",
+  "source_repo": "https://github.com/esshoo/3Esnap",
+  "expected_base_commit": "c335cc8195d2b56c8c087d06582c191d3e443a84",
+  "artifact_type": "source overlay / patch, NOT an APK",
+  "status": "Source changes, local tests passed; Android build & on-device verification pending",
+  "modified_or_added_files": [
+    "README.md",
+    "app/build.gradle",
+    "app/src/main/AndroidManifest.xml",
+    "app/src/main/assets/www/app.js",
+    "app/src/main/assets/www/index.html",
+    "app/src/main/java/com/snapclean/app/BackupRules.java",
+    "app/src/main/java/com/snapclean/app/CropActivity.java",
+    "app/src/main/java/com/snapclean/app/CropOverlayView.java",
+    "app/src/main/java/com/snapclean/app/DownloadStore.java",
+    "app/src/main/java/com/snapclean/app/EditorActivity.java",
+    "app/src/main/java/com/snapclean/app/MainActivity.java",
+    "app/src/main/java/com/snapclean/app/NativeBridge.java",
+    "app/src/main/java/com/snapclean/app/PlayerActivity.java",
+    "docs/CHANGELOG.md",
+    "docs/EDITING_AR.md",
+    "docs/INSTALL_V2_2_AR.md",
+    "docs/KNOWN_LIMITATIONS.md",
+    "docs/LOCAL_TEST_RESULTS.txt",
+    "docs/TESTING.md",
+    "docs/UPDATE_AND_RESTORE_AR.md",
+    "docs/UPLOAD_AR.md",
+    "tests/fixtures/bridge-mock.js",
+    "tests/ui_smoke.py",
+    "tools/BackupRulesSelfTest.java",
+    "tools/check-java.sh",
+    "tools/check_project.py"
+  ],
+  "sha256": {
+    "README.md": "047d89008a32b8aee10fe0f618815dae0d41e035daf9d0bff2edc2806ace086b",
+    "app/build.gradle": "a49587873c53695c4af97cef18bc94732749974e8976f36efeea108663cf986f",
+    "app/src/main/AndroidManifest.xml": "856f889355b86d80773ea1c43be85702898e2642461799fcd5a35c911e775621",
+    "app/src/main/assets/www/app.js": "49025e4eb12a6ca8e9d208272783003ba45f424c78124050e6e9d74be8ae6de0",
+    "app/src/main/assets/www/index.html": "c586db841cddec91b7990112e08ea8836328d68a687a644b7cb29d94d6a41076",
+    "app/src/main/java/com/snapclean/app/BackupRules.java": "4e83d9fa4bb029ccdece99fc8c22a84bbcf954e881970f140fabe2027709522e",
+    "app/src/main/java/com/snapclean/app/CropActivity.java": "ccb089ed4ded68c721e387da8820aa4601e877626657ee2284cbf0099a12a5a9",
+    "app/src/main/java/com/snapclean/app/CropOverlayView.java": "f38d2962cd3e8585b9ef2f71035d1887aefb7b770a234a32dd254482f6ac0427",
+    "app/src/main/java/com/snapclean/app/DownloadStore.java": "eddff117e15dc85f7630d4e17694d06c2664ad50a9a5f5be07b77a28a2d3dfff",
+    "app/src/main/java/com/snapclean/app/EditorActivity.java": "d0e232b709fb07e3da772b9bc129c79e29acb6e04d78ec794ef744da1eea4c8e",
+    "app/src/main/java/com/snapclean/app/MainActivity.java": "2ea9a68e51553a06cc919867fb1c07133a819450cc9822eefff034b8b46621bb",
+    "app/src/main/java/com/snapclean/app/NativeBridge.java": "9e776f76b312fc6811c9ab36800dc848736bb43c7e6b4cdcdd720d4029862abc",
+    "app/src/main/java/com/snapclean/app/PlayerActivity.java": "bf96dc8fe344c97dce90c6720baa879a74949cf9b1730d34ac7613380155b122",
+    "docs/CHANGELOG.md": "f5514ecbe2017f126d858cb3d1273bd6db917d82eac7f77ba7eeaa297d6c7abc",
+    "docs/EDITING_AR.md": "d859035ae39f35234225935d5726ca7ab66dd4746282f034e507b623260910fb",
+    "docs/INSTALL_V2_2_AR.md": "4b09bcb85c394fc2905b66e213ba407762c0dec860c08c52d647523fed05e96a",
+    "docs/KNOWN_LIMITATIONS.md": "4592eb1e4709ef784e0701fdde5545e177ad12dea7d69fa044e8445f57d01afb",
+    "docs/LOCAL_TEST_RESULTS.txt": "a681fbee5db07b267024b7944982d595056d5a338611666b084bbc601d38115f",
+    "docs/TESTING.md": "909b817f6280770cd4abc02cd5396399452c9ba9fa6ec3b4a122b8a7bf727344",
+    "docs/UPDATE_AND_RESTORE_AR.md": "ac5f17593ca012cf4109d0a15f5c74aa95e25d98be22ebcd7645affe65dc426b",
+    "docs/UPLOAD_AR.md": "29d6a4f8087840dabe930ee097b30ffa9abedfa11792876d277077ed9986dc33",
+    "tests/fixtures/bridge-mock.js": "aa5af73c34adc24a24c2409708ef7516cf7e9a2ab9e5960c084c985966a01321",
+    "tests/ui_smoke.py": "3672d57a5aa4f0e8c58ec21973a3a5ab4646a0b727d120f441cd75d25431feaa",
+    "tools/BackupRulesSelfTest.java": "1c30435f73da74d6831b45082e225630e6878694869710c6f027e0115f8db6b1",
+    "tools/check-java.sh": "8b3e04fb2737db390d6bbe57be8bc0e6d36b7ad191f8c237fdcdd0907f89704a",
+    "tools/check_project.py": "fda468ea202c84891a2719fb8db0311112594be267a82d5975c4e0f7442e7de3"
   },
-  "retained_originals": [
-    "LICENSE",
-    "gradlew",
-    "gradlew.bat",
-    "gradle/wrapper/gradle-wrapper.jar"
-  ],
-  "changed_files": [
-    {
-      "path": "README.md",
-      "size_bytes": 7983,
-      "sha256": "d23f235432a88f8182af90d19cf01faaf6a888cd9ad18e218f6543eaa2a6680a"
-    },
-    {
-      "path": "app/build.gradle",
-      "size_bytes": 2457,
-      "sha256": "1afc13a02b00ca5c20cc81f10a30f8a21edf21c54b2db3ed014e8d47d8e9ff38"
-    },
-    {
-      "path": "app/src/main/AndroidManifest.xml",
-      "size_bytes": 2358,
-      "sha256": "f2dc7c6393baef6c99b24b7b9b63818d55bb08032fccc6b0990ca3e005471c1f"
-    },
-    {
-      "path": "app/src/main/assets/www/app.js",
-      "size_bytes": 19265,
-      "sha256": "6bd54646db930d6848851d7dc210119b02987b041e2259107eb851f280ed25e9"
-    },
-    {
-      "path": "app/src/main/assets/www/index.html",
-      "size_bytes": 14160,
-      "sha256": "36caa65e982c315df42c5f176400e77519a60e460f0959de97bff3eec52daf2f"
-    },
-    {
-      "path": "app/src/main/assets/www/style.css",
-      "size_bytes": 20100,
-      "sha256": "c3bc28a1f37aab37bfcb38c2fa7544cab9343b604e5f803ed54dd4506047ec02"
-    },
-    {
-      "path": "app/src/main/java/com/snapclean/app/CropOverlayView.java",
-      "size_bytes": 5441,
-      "sha256": "72b99c2b8a512b99bd71986ad88eef9b3bb65d7e7bda33b3730c05a7aa41459f"
-    },
-    {
-      "path": "app/src/main/java/com/snapclean/app/DownloadStore.java",
-      "size_bytes": 8562,
-      "sha256": "f56900b6507829b180e34ddb53e396a16ff1b9903fce160143585bc2341c173c"
-    },
-    {
-      "path": "app/src/main/java/com/snapclean/app/EditPlan.java",
-      "size_bytes": 4079,
-      "sha256": "64a1bfb20d987d75a7ccd9c5ea019cd22f2a94d35cc9f74cc8e5df6717493f8a"
-    },
-    {
-      "path": "app/src/main/java/com/snapclean/app/EditorActivity.java",
-      "size_bytes": 21535,
-      "sha256": "a43612a201ce2e92634ec3204552dbded905ad112db101c29dca14294af8ddb4"
-    },
-    {
-      "path": "app/src/main/java/com/snapclean/app/MainActivity.java",
-      "size_bytes": 16018,
-      "sha256": "13f92bbbcc4fa973ebd8ff7a1fca5c01828736964be4b4be538f6059de7b7d2e"
-    },
-    {
-      "path": "app/src/main/java/com/snapclean/app/MediaEditExporter.java",
-      "size_bytes": 7115,
-      "sha256": "32053ed0e1e0304a9aea821e4092322cc9731d8b6e0873e306b1e59d92f81bcc"
-    },
-    {
-      "path": "app/src/main/java/com/snapclean/app/NativeBridge.java",
-      "size_bytes": 16400,
-      "sha256": "098ea018bd44ba840ab92f8f8137382184cca7e6002982332bbec4edd17d6631"
-    },
-    {
-      "path": "app/src/main/java/com/snapclean/app/PlayerActivity.java",
-      "size_bytes": 13398,
-      "sha256": "a8086c6c13d7e18529ad7c7c56599cbcb6023bbb224c438e73ee67ea513aa417"
-    },
-    {
-      "path": "app/src/main/java/com/snapclean/app/SnapCleanApp.java",
-      "size_bytes": 1801,
-      "sha256": "2ae86a1c85e7b2e0b3efd79461e261fb1c82b5a2a5770d5b6d52498997e66905"
-    },
-    {
-      "path": "app/src/test/java/com/snapclean/app/EditPlanTest.java",
-      "size_bytes": 1007,
-      "sha256": "40eb0728a3bed8e2e6c9290647ece9795ab78a067e4cc64e5cc534d2c77a0689"
-    },
-    {
-      "path": "docs/CHANGELOG.md",
-      "size_bytes": 5814,
-      "sha256": "cba9d1dc57313949bd2c8b239b018c0d51a5ed1a060e55b97d4afd4835a99615"
-    },
-    {
-      "path": "docs/EDITING_AR.md",
-      "size_bytes": 3722,
-      "sha256": "27653721d5b34c82e8feea91b763e196a5fe201a1466ac6f1b8c9e39dce12dab"
-    },
-    {
-      "path": "docs/KNOWN_LIMITATIONS.md",
-      "size_bytes": 5786,
-      "sha256": "65a45adfb5d4893a8c099e35cbea066439d5e0b0b62df9a3dde608432657f1b8"
-    },
-    {
-      "path": "docs/LOCAL_TEST_RESULTS.txt",
-      "size_bytes": 1015,
-      "sha256": "f452f0b5d11562e0dde9d70f7b4a03ddbadc5f54d09994aa4d2090733f6b4623"
-    },
-    {
-      "path": "docs/TESTING.md",
-      "size_bytes": 10065,
-      "sha256": "efb9ac187ac6cc865db9a948b419d1082138fc55b896f5ea9104055831e70b88"
-    },
-    {
-      "path": "docs/UPLOAD_AR.md",
-      "size_bytes": 9887,
-      "sha256": "678875917b9ef1ae1ccb72a551c2276988ece3dfbe3b1cc64e0333977ed101b8"
-    },
-    {
-      "path": "tests/fixtures/bridge-mock.js",
-      "size_bytes": 2874,
-      "sha256": "135d7125bf8ec2eb5cbae1aa01a08bac18cfb15743f0d6c87920d380e784b50f"
-    },
-    {
-      "path": "tests/ui_smoke.py",
-      "size_bytes": 17284,
-      "sha256": "e8281e39c20a0117f6c647a920a228f87b368007b586fee5d48e02b37b222be9"
-    },
-    {
-      "path": "tools/EditPlanSelfTest.java",
-      "size_bytes": 2110,
-      "sha256": "504fdbc01e1a91a3536c0499157207238a291ab44510e9843c928bc9fdfb4aa1"
-    },
-    {
-      "path": "tools/check-java.sh",
-      "size_bytes": 567,
-      "sha256": "ca2e6f3d84dad573c22ca01fc979c6fe8c3e73c4453a962e03de6d66eaaeeaab"
-    },
-    {
-      "path": "tools/check_project.py",
-      "size_bytes": 5103,
-      "sha256": "ae9aab7dca3320744e2bda7accfad8cd567a52a299159b7381dc78248f7a284f"
-    }
-  ],
-  "warnings": [
-    "New native editor has not been compiled against Android SDK in local environment.",
-    "FFmpeg crop/export on real Android device remains untested.",
-    "Overwrite source files on an existing Git clone; do not use the overlay as a complete repository."
-  ]
+  "removed_files": [],
+  "important": "Do not uninstall app: backup JSON first; Android upgrades require matching signing certificate, app ID and greater versionCode."
 }

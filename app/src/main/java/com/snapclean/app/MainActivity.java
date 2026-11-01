@@ -32,6 +32,9 @@ import androidx.webkit.WebViewAssetLoader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -39,10 +42,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 public final class MainActivity extends AppCompatActivity {
     private static final String HOME="https://appassets.androidplatform.net/assets/www/index.html";
-    private static final int STORAGE_PERMISSION=101, NOTIFICATION_PERMISSION=102, IMPORT_FILES=201, EXPORT_LINKS=202;
+    private static final int STORAGE_PERMISSION=101, NOTIFICATION_PERMISSION=102, IMPORT_FILES=201, EXPORT_LINKS=202, IMPORT_BACKUP=203;
     private WebView webView;
     private NativeBridge bridge;
     private SnapCleanApp app;
@@ -223,6 +227,48 @@ public final class MainActivity extends AppCompatActivity {
         try { startActivityForResult(i,IMPORT_FILES); }
         catch(Exception ex) { bridge.error("لم أجد منتقي ملفات على الجهاز."); }
     }
+    public void chooseImportBackup() {
+        // Separate from media import: a JSON backup contains records, not video bytes.
+        Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*")
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"application/json","text/plain","application/octet-stream"})
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        try { startActivityForResult(i,IMPORT_BACKUP); }
+        catch(Exception ex) { bridge.error("تعذر فتح منتقي ملف النسخة الاحتياطية JSON."); }
+    }
+    private void restoreBackup(Uri document) {
+        app.io.execute(() -> {
+            try {
+                byte[] data;
+                try(InputStream input=getContentResolver().openInputStream(document);
+                    ByteArrayOutputStream output=new ByteArrayOutputStream()) {
+                    if(input==null) throw new IOException("تعذر فتح ملف النسخة الاحتياطية.");
+                    byte[] chunk=new byte[8192];int count;
+                    while((count=input.read(chunk))!=-1) {
+                        if(output.size()+count>BackupRules.MAX_BYTES)
+                            throw new IOException("ملف النسخة الاحتياطية أكبر من الحد المسموح (12 MB).");
+                        output.write(chunk,0,count);
+                    }
+                    data=output.toByteArray();
+                }
+                String json=new String(data,StandardCharsets.UTF_8).replaceFirst("^\uFEFF", "");
+                JSONObject backup=new JSONObject(json);
+                if(!"3Esnap".equalsIgnoreCase(backup.optString("app","")))
+                    throw new IllegalArgumentException("هذا ليس ملف نسخ احتياطي من 3Esnap.");
+                int schema=backup.optInt("schemaVersion",-1);
+                if(schema!=1 && schema!=2)
+                    throw new IllegalArgumentException("تنسيق النسخة الاحتياطية غير مدعوم (الإصدارات 1 و2 فقط).");
+                JSONArray rows=backup.optJSONArray("items");
+                if(rows==null) throw new IllegalArgumentException("لا يحتوي الملف على قائمة items صالحة.");
+                DownloadStore.RestoreResult result=app.store.restore(rows);
+                bridge.snapshot(false);
+                bridge.emit("tab",Json.object("tab","library"));
+                bridge.message(result.summary()+". ملف JSON لا يحتوي على الفيديوهات نفسها.");
+            } catch(Exception ex) {
+                bridge.error("تعذر استرجاع النسخة: "+(ex.getMessage()==null?"ملف JSON غير صالح":ex.getMessage()));
+            }
+        });
+    }
     public void chooseExport() {
         String date=new SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());
         Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE)
@@ -252,14 +298,17 @@ public final class MainActivity extends AppCompatActivity {
                 bridge.emit("tab",Json.object("tab","library"));
                 bridge.message("أُضيف "+added+" ملف • موجود مسبقاً: "+skipped+" • تعذر استيراده: "+failed);
             });
+        } else if(requestCode==IMPORT_BACKUP && data.getData()!=null) {
+            restoreBackup(data.getData());
         } else if(requestCode==EXPORT_LINKS && data.getData()!=null) {
             Uri destination=data.getData();
             app.io.execute(() -> {
                 try {
                     JSONArray items=new JSONArray();
                     for(DownloadRecord r:app.store.all()) items.put(Json.object("title",r.title,"filename",r.filename,
-                            "sourceUrl",r.sourceUrl,"format",r.format,"createdAt",r.createdAt,"size",r.size,"status",r.status));
-                    String json=Json.object("app","3Esnap","schemaVersion",1,"exportedAt",System.currentTimeMillis(),"items",items).toString(2);
+                            "sourceUrl",r.sourceUrl,"format",r.format,"quality",r.quality,
+                            "createdAt",r.createdAt,"size",r.size,"status",r.status));
+                    String json=Json.object("app","3Esnap","schemaVersion",2,"exportedAt",System.currentTimeMillis(),"items",items).toString(2);
                     try(OutputStream out=getContentResolver().openOutputStream(destination,"w")) {
                         if(out==null) throw new java.io.IOException("لا يمكن الكتابة إلى الوجهة.");
                         out.write(json.getBytes(StandardCharsets.UTF_8));

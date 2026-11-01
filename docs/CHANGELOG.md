@@ -1,3 +1,10 @@
+## v2.2.0 — Restore & Crop UI
+- Import exported v1/v2 JSON backups, merge records safely without deleting existing data, and preserve source links as re-downloadable placeholders.
+- Automatically attach old media selected via Android picker to matching restored records by filename and format.
+- Separate, interactive crop screen with a still-frame scrubber, four draggable handles, and Free / 1:1 / 9:16 / 16:9 presets.
+- Keep video temporal trim + FFmpeg crop export together; source file and source URL are retained.
+- Application versionCode increased for forwards updates; documented Android signing/package identity and stable Release signing.
+
 # 3Esnap — إصدار 2.1.0 (تطوير المصدر)
 
 ## إصلاح تجربة الشاشات الصغيرة

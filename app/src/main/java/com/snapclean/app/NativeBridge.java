@@ -116,6 +116,7 @@ public final class NativeBridge {
     }
     @JavascriptInterface public void cancel(long id) { DownloadService.cancel(activity,id); }
     @JavascriptInterface public void importFiles() { activity.runOnUiThread(activity::chooseImports); }
+    @JavascriptInterface public void importLibraryBackup() { activity.runOnUiThread(activity::chooseImportBackup); }
     @JavascriptInterface public void exportLibrary() { activity.runOnUiThread(activity::chooseExport); }
     @JavascriptInterface public void setTheme(boolean light) { activity.setLightTheme(light); }
     @JavascriptInterface public void paste() {
@@ -148,6 +149,17 @@ public final class NativeBridge {
             });
         });
     }
+    @JavascriptInterface public void crop(long id) {
+        app.io.execute(() -> {
+            DownloadRecord record=available(id);
+            if(record==null)return;
+            if(!"video".equals(record.format)) {error("قص الإطار متاح للفيديو فقط.");return;}
+            activity.runOnUiThread(() -> {
+                try {activity.startActivity(new Intent(activity,EditorActivity.class).putExtra("id",id).putExtra("openCrop",true));}
+                catch(Exception ex) {error("تعذر فتح أداة قص الإطار.");}
+            });
+        });
+    }
     @JavascriptInterface public void share(long id) {
         app.io.execute(() -> {
             DownloadRecord record=available(id);
@@ -174,6 +186,17 @@ public final class NativeBridge {
         }
         if(record.missing) app.store.setMissing(id,false);
         return record;
+    }
+    @JavascriptInterface public void redownloadRestored(long id) {
+        activity.runOnUiThread(() -> activity.withDownloadPermissions(() -> app.io.execute(() -> {
+            try {
+                if(!app.store.requeueRestored(id)) {
+                    error("تعذرت إعادة التنزيل. تحقق من وجود رابط مصدر محفوظ وعدم وجود تنزيل آخر نشط.");return;
+                }
+                activity.runOnUiThread(() -> DownloadService.start(activity,id));
+                snapshot(false);message("بدأت إعادة تنزيل الملف من الرابط المحفوظ.");
+            } catch(Exception ex) { error("تعذرت إعادة التنزيل: "+ex.getMessage()); }
+        })));
     }
     @JavascriptInterface public void sourceAction(long id,String action) {
         app.io.execute(() -> {

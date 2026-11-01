@@ -14,7 +14,7 @@
     sourceUrl:'https://example.com/watch?v=demo8',status:'failed',progress:0,message:'انقطع الاتصال. يمكنك إعادة المحاولة.'});
   const record=(method,args)=>window.__calls.push({method,args:Array.from(args)});
   const emit=(type,data)=>window.AppNative.receive({type,data});
-  window.__snapshot=()=>emit('snapshot',{items:window.__records,version:'2.1.0',buildType:'debug',engineVersion:'المحرك المرفق'});
+  window.__snapshot=()=>emit('snapshot',{items:window.__records,version:'2.2.0',buildType:'debug',engineVersion:'المحرك المرفق'});
   window.AndroidNative={
     ready(){record('ready',arguments);setTimeout(window.__snapshot,20);},
     inspectUrl(raw,requestId){record('inspectUrl',arguments);setTimeout(()=>emit('inspect',{
@@ -25,7 +25,7 @@
     refreshLibrary(){record('refreshLibrary',arguments);window.__snapshot();},
     updateEngine(){record('updateEngine',arguments);emit('engineUpdating',{busy:true});setTimeout(()=>emit('engineUpdating',{busy:false}),50);}
   };
-  ['setTheme','play','edit','share','sourceAction','requestDelete','retry','cancel','importFiles','exportLibrary'].forEach(method=>{
+  ['setTheme','play','edit','crop','share','sourceAction','requestDelete','retry','cancel','importFiles','exportLibrary','importLibraryBackup','redownloadRestored'].forEach(method=>{
     window.AndroidNative[method]=function(){record(method,arguments);};
   });
 })();
