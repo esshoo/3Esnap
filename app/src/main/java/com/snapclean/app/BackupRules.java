@@ -11,12 +11,14 @@ public final class BackupRules {
         return clean.length()>limit?clean.substring(0,limit):clean;
     }
     public static String format(String value, String filename) {
-        if("audio".equals(value) || "video".equals(value)) return value;
+        if("audio".equals(value) || "video".equals(value) || "gif".equals(value)) return value;
         String lower=filename==null?"":filename.toLowerCase(java.util.Locale.ROOT);
+        if(lower.endsWith(".gif"))return "gif";
         if(lower.endsWith(".mp3") || lower.endsWith(".m4a") || lower.endsWith(".wav")) return "audio";
         return "video";
     }
     public static String quality(String format, String quality) {
+        if("gif".equals(format))return "edited";
         try {return DownloadPolicy.quality(format,quality);} catch(IllegalArgumentException ex) {
             return "audio".equals(format)?"192":"best";
         }

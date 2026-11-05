@@ -90,11 +90,21 @@ try:
         ok('Native snapshot renders six completed files; active/failed jobs stay out of the library')
         expect(page.locator('.job-card')).to_have_count(2)
         ok('Download queue renders progress and retry/cancel controls')
+        # Biometric-protected vault has its own navigation entry, backed by a native screen.
+        page.locator('#vaultButton').click()
+        assert page.evaluate("__calls.some(c=>c.method==='openVault')")
+        ok('Dedicated vault tab invokes the native biometric screen')
         page.screenshot(path=str(OUT/'preview-download.png'))
         page.locator('.bottom-nav [data-tab="library"]').click()
         expect(page.locator('.media-card')).to_have_count(6)
         expect(page.locator('#totalSize')).to_have_text('225 MB')
         ok('Library grid and byte totals render correctly')
+        expect(page.locator('#categoryFilter option')).to_have_count(3)
+        page.locator('#categoryFilter').select_option('تعليم')
+        expect(page.locator('.media-card')).to_have_count(1)
+        expect(page.locator('[data-id="1"] .category-chip')).to_have_text('تعليم')
+        page.locator('#categoryFilter').select_option('all')
+        ok('Automatic categories are visible, and category filtering works')
         if OFFLINE:
             page.evaluate("""async () => {
                 const pending=[];
@@ -147,6 +157,13 @@ try:
         page.locator('#sheetActions [data-action="crop"]').click()
         assert page.evaluate("__calls.filter(c=>c.method==='crop').at(-1).args")==[1]
         ok('Crop is a separate, one-tap action in the video file menu')
+        page.locator('[data-id="1"] [data-action="menu"]').click()
+        page.locator('#sheetActions [data-action="editCategory"]').click()
+        assert page.evaluate("__calls.filter(c=>c.method==='editCategory').at(-1).args")==[1]
+        page.locator('[data-id="1"] [data-action="menu"]').click()
+        page.locator('#sheetActions [data-action="hide"]').click()
+        assert page.evaluate("__calls.filter(c=>c.method==='hide').at(-1).args")==[1]
+        ok('File menu exposes manual categories and biometric hide action')
         ok('Share-file, open-source, edit-source and deletion actions call their native entrypoints')
         page.locator('[data-id="1"] .media-play').click()
         assert page.evaluate("__calls.filter(c=>c.method==='play').at(-1).args")==[1]
@@ -196,6 +213,13 @@ try:
         page.locator('#downloadButton').click()
         assert page.evaluate("__calls.filter(c=>c.method==='startDownload').at(-1).args")==['https://example.com/video/demo','video','720','رحلة قصيرة — تجربة تنزيل']
         ok('Inspect, real-duration formatting, quality selection and enqueue parameters are connected')
+        auto=page.evaluate("__calls.filter(c=>c.method==='scheduleAutoDownload').at(-1)")
+        assert auto is not None and auto['args'][:2]==['https://example.com/video/demo','video']
+        page.locator('#autoDownloadSwitch').uncheck()
+        assert page.evaluate("__calls.some(c=>c.method==='cancelQueuedSource')")
+        assert page.locator('#settingsAutoDownload').is_checked() is False
+        page.locator('#autoDownloadSwitch').check()
+        ok('Three-second automatic scheduling is native, optional and synchronized with settings')
         page.locator('#formatSelect').select_option('audio')
         expect(page.locator('#qualitySelect')).to_have_value('192')
         expect(page.locator('#qualitySelect')).to_be_disabled()
@@ -243,6 +267,11 @@ try:
         assert page.evaluate("__calls.filter(c=>c.method==='redownloadRestored').at(-1).args")==[1]
         expect(page.locator('[data-id="1"] .card-play-button')).to_have_text('إعادة تنزيل')
         ok('Missing files retain source links and offer re-download without a video URI')
+        page.evaluate("__records[2].hidden=true;__snapshot()")
+        expect(page.locator('[data-id="3"]')).to_have_count(0)
+        assert 'من الفكرة إلى المشهد' not in page.locator('#libraryGrid').inner_text()
+        page.evaluate("__records[2].hidden=false;__snapshot()")
+        ok('Hidden media is omitted from library snapshots and cannot leak titles')
         page.evaluate('__records=[]; __snapshot()')
         expect(page.locator('#libraryEmpty')).to_be_visible()
         expect(page.locator('#libraryGrid .media-card')).to_have_count(0)

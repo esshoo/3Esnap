@@ -1,3 +1,14 @@
+## v2.3.0 — Encrypted Vault, Network-Aware Downloads, GIF and Categories
+
+- Biometric-gated private vault for downloaded/imported MP3/MP4/GIF. Actual AES-256-GCM encryption in private app files with Android Keystore key. The public file is removed only after encrypted copy is complete; imported SAF files require provider deletion permission or hiding fails safely. Vault contents excluded from regular library snapshots and exported JSON.
+- Durable WorkManager media jobs with network constraint, bounded exponential retry, foreground notification, optional auto-download ~3s after a successful inspect; supports running while app is not visible subject to OS limits. Interrupted or network-waiting jobs are recovered on app launch; automatic retry may re-download bytes from the start.
+- GIF export (maximum 15 seconds) from trimmed/cropped video with palette optimized FFmpeg, saved/shareable as image/gif, original unaffected.
+- Experimental speech-band filtering (highpass/lowpass/afftdn), NOT reliable instrumental/vocal stem separation; works on audio or video's audio track.
+- Local heuristic category suggestions, manual category editing, filter and search for media files; DB migrated additively from schema v1 to v2.
+- GIF library import, thumbnails, viewing and backup round-trip. Preserves common imported M4A/WebM/WAV media extensions on vault restore, verifies AES-GCM authentication tags before preview. Fixed pending-network cancellation/retry/duplicate checks and public metadata after vault restore.
+- Android API 24 compatibility preserved, same app ID/build signing configuration; patch does not contain signing keys.
+- JVM/source/Chromium mocked UI and synthetic FFmpeg tests passed; native Android APK compilation and device behavior remain unverified in this delivery.
+
 ## v2.2.0 — Restore & Crop UI
 - Import exported v1/v2 JSON backups, merge records safely without deleting existing data, and preserve source links as re-downloadable placeholders.
 - Automatically attach old media selected via Android picker to matching restored records by filename and format.

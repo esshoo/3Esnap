@@ -35,7 +35,7 @@ public final class DownloadService extends Service {
     private static final int FOREGROUND_ID=30;
     private static final String CANCEL="cancel";
     private static final java.util.Set<Long> IN_FLIGHT=java.util.concurrent.ConcurrentHashMap.newKeySet();
-    public static boolean isInFlight(long id) { return IN_FLIGHT.contains(id); }
+    public static boolean isInFlight(long id) {return IN_FLIGHT.contains(id)||DownloadWorker.isInFlight(id);}
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final ScheduledExecutorService guard=Executors.newSingleThreadScheduledExecutor();
     private final AtomicInteger outstanding=new AtomicInteger();
@@ -48,21 +48,19 @@ public final class DownloadService extends Service {
     private volatile boolean destroyed;
     private final java.util.Set<Long> accepted = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
+    /** All NEW transfers use the durable WorkManager queue. Legacy Service stays for compatibility. */
     public static void start(Context context,long id) {
-        Intent intent=new Intent(context,DownloadService.class).putExtra("id",id);
-        try { ContextCompat.startForegroundService(context,intent); }
+        try {DownloadWorker.schedule(context,id,0);}
         catch(Exception ex) {
             SnapCleanApp app=SnapCleanApp.of(context);
-            app.store.fail(id,"تعذر بدء التنزيل في الخلفية. افتح التطبيق وأعد المحاولة.");
-            app.changed();
+            app.store.fail(id,"تعذر جدولة التنزيل في الخلفية. حاول مجدداً.");app.changed();
         }
     }
     public static void cancel(Context context,long id) {
         SnapCleanApp app=SnapCleanApp.of(context);
-        app.store.cancel(id);
-        app.changed();
-        // Never block the main thread while a native subprocess is being stopped.
-        app.io.execute(() -> stopProcess(id));
+        app.store.cancel(id);app.changed();
+        DownloadWorker.cancel(context,id);
+        app.io.execute(()->{stopProcess(id);DownloadWorker.stopProcess(id);});
     }
     private static String processId(long id) { return "3esnap-"+id; }
     private static synchronized void stopProcess(long id) {

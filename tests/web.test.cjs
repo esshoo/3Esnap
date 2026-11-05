@@ -32,3 +32,14 @@ test('image URLs only use HTTPS',()=>{assert.equal(C.safeImage('https://example.
 test('reject script and file image URLs',()=>{for(const url of ['javascript:alert(1)','file:///sdcard/x','data:text/html,bad']) assert.equal(C.safeImage(url),'media-placeholder.svg');});
 test('reject credential-bearing image URLs',()=>assert.equal(C.safeImage('https://user:pass@example.com/a'),'media-placeholder.svg'));
 test('empty snapshot is supported',()=>{assert.equal(C.selectFiles([]).length,0);assert.equal(C.stats([]).count,0);});
+
+test('category filtering and search match category text',()=>{
+ const categoryRows=[{...rows[0],category:'تعليم'},{...rows[1],category:'صوتيات'}];
+ assert.deepEqual(C.selectFiles(categoryRows,{category:'تعليم'}).map(r=>r.id),[1]);
+ assert.deepEqual(C.selectFiles(categoryRows,{query:'صوتيات'}).map(r=>r.id),[2]);
+});
+test('waiting network is an active cancellable state',()=>assert.equal(C.isActive('waiting_network'),true));
+test('GIF files can be listed as a distinct format',()=>{
+ const gif={...rows[0],id:20,format:'gif',category:'صور متحركة'};
+ assert.deepEqual(C.selectFiles([gif,...rows],{filter:'gif'}).map(r=>r.id),[20]);
+});

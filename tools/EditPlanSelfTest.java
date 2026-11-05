@@ -26,6 +26,12 @@ public final class EditPlanSelfTest {
         List<String> audio=EditPlan.ffmpeg("/binary","/in","/out.mp3",clip,null,true,false);
         test(audio.contains("libmp3lame") && audio.contains("-vn"),"audio re-encode");
         bad(()->EditPlan.ffmpeg("/ffmpeg","/in","/out.mp3",clip,crop,true,false));
+        List<String> filtered=EditPlan.ffmpeg("/ffmpeg","/in","/out.mp3",clip,null,true,false,true);
+        test(filtered.contains("-af") && filtered.toString().contains("afftdn"),"experimental speech-band filtering");
+        List<String> gif=EditPlan.gif("/ffmpeg","/in","/out.gif",clip,crop);
+        test(gif.contains("-filter_complex") && gif.toString().contains("palettegen")
+            && gif.toString().contains("paletteuse") && gif.contains("-an"),"GIF palette conversion");
+        bad(()->EditPlan.gif("/ffmpeg","/in","/out.gif",EditPlan.clip(0,16000,16000),null));
         System.out.println("PASS: "+n+" media edit policy checks");
     }
 }

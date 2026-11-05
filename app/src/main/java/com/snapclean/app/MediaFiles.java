@@ -32,10 +32,14 @@ public final class MediaFiles {
     public interface CancelCheck { boolean cancelled(); }
 
     public Saved publish(File source, String name, boolean audio, CancelCheck check) throws IOException {
+        return publish(source,name,audio ? "audio/mpeg" : "video/mp4",check);
+    }
+    public Saved publish(File source,String name,String mime,CancelCheck check) throws IOException {
+        if(mime==null || !(mime.startsWith("audio/") || mime.startsWith("video/") || "image/gif".equals(mime)))
+            throw new IOException("نوع الملف الناتج غير مدعوم.");
         if (!source.isFile() || source.length()==0) throw new IOException("ملف التنزيل فارغ أو غير موجود.");
         if (context.getCacheDir().getUsableSpace() < source.length()+8L*1024*1024)
             throw new IOException("المساحة غير كافية لحفظ الملف النهائي.");
-        String mime = audio ? "audio/mpeg" : "video/mp4";
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ContentValues values=new ContentValues();
             values.put(MediaStore.MediaColumns.DISPLAY_NAME,name);
@@ -84,6 +88,7 @@ public final class MediaFiles {
         return new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),"3Esnap");
     }
     public boolean exists(DownloadRecord r) {
+        if(r.hidden)return new VaultStore(context,store,this).encryptedFile(r.id).isFile();
         if(r.uri==null || r.uri.isEmpty()) return false;
         try {
             Uri uri=Uri.parse(r.uri);
@@ -98,12 +103,14 @@ public final class MediaFiles {
         return f;
     }
     public Uri shareUri(DownloadRecord r) throws IOException {
+        if(r.hidden)throw new IOException("الملف في الخزنة، افتح الخزنة بالبصمة أولاً.");
         Uri uri=Uri.parse(r.uri);
         if("file".equals(uri.getScheme())) return FileProvider.getUriForFile(context,BuildConfig.APPLICATION_ID+".files",safeLegacy(uri));
         if (!"content".equals(uri.getScheme())) throw new IOException("نوع الملف غير مدعوم.");
         return uri;
     }
     public void deleteOwned(DownloadRecord r) throws IOException {
+        if(r.hidden)throw new IOException("الملف مشفر في الخزنة؛ استخدم إدارة الخزنة.");
         if(r.imported) throw new IOException("الملفات المستوردة تُزال من المكتبة فقط.");
         Uri uri=Uri.parse(r.uri);
         if ("file".equals(uri.getScheme())) {
@@ -131,9 +138,10 @@ public final class MediaFiles {
             }
         }
         String mime=context.getContentResolver().getType(uri);
-        if (mime==null || !(mime.startsWith("audio/") || mime.startsWith("video/"))) {
+        if (mime==null || !(mime.startsWith("audio/") || mime.startsWith("video/") || "image/gif".equals(mime))) {
             String lower=name.toLowerCase(java.util.Locale.ROOT);
-            if(lower.endsWith(".mp3")) mime="audio/mpeg";
+            if(lower.endsWith(".gif")) mime="image/gif";
+            else if(lower.endsWith(".mp3")) mime="audio/mpeg";
             else if(lower.endsWith(".mp4")) mime="video/mp4";
             else throw new IOException("الملف ليس صوتاً أو فيديو مدعوماً.");
         }
@@ -141,15 +149,21 @@ public final class MediaFiles {
     }
     public File thumbnailFile(long id) { return new File(context.getCacheDir(),"thumbs/"+id+".jpg"); }
     public synchronized void createThumbnail(DownloadRecord r) {
-        if (r==null || !"completed".equals(r.status) || r.uri.isEmpty()) return;
+        if (r==null || r.hidden || !"completed".equals(r.status) || r.uri.isEmpty()) return;
         File target=thumbnailFile(r.id);
         if(target.isFile()) return;
         MediaMetadataRetriever retriever=new MediaMetadataRetriever();
         Bitmap original=null, scaled=null;
         File tmp=new File(target.getPath()+".tmp");
         try {
-            retriever.setDataSource(context,Uri.parse(r.uri));
-            if ("audio".equals(r.format)) {
+            // GIF is an image, not a media stream. Never invoke MediaMetadataRetriever
+            // before bitmap decoding; some Android versions reject GIF sources.
+            if("gif".equals(r.format)) {
+                try(InputStream input=context.getContentResolver().openInputStream(Uri.parse(r.uri))) {
+                    if(input!=null)original=android.graphics.BitmapFactory.decodeStream(input);
+                }
+            } else if ("audio".equals(r.format)) {
+                retriever.setDataSource(context,Uri.parse(r.uri));
                 byte[] art=retriever.getEmbeddedPicture();
                 if(art!=null) {
                     android.graphics.BitmapFactory.Options bounds=new android.graphics.BitmapFactory.Options();
@@ -160,8 +174,9 @@ public final class MediaFiles {
                     original=android.graphics.BitmapFactory.decodeByteArray(art,0,art.length,bounds);
                 }
             } else if(Build.VERSION.SDK_INT>=27) {
+                retriever.setDataSource(context,Uri.parse(r.uri));
                 original=retriever.getScaledFrameAtTime(0,MediaMetadataRetriever.OPTION_CLOSEST_SYNC,480,270);
-            } else original=retriever.getFrameAtTime(0,MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+            } else { retriever.setDataSource(context,Uri.parse(r.uri)); original=retriever.getFrameAtTime(0,MediaMetadataRetriever.OPTION_CLOSEST_SYNC); }
             if(original==null) return;
             float factor=Math.min(1f,480f/Math.max(original.getWidth(),original.getHeight()));
             scaled=Bitmap.createScaledBitmap(original,Math.max(1,(int)(original.getWidth()*factor)),Math.max(1,(int)(original.getHeight()*factor)),true);

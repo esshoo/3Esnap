@@ -40,6 +40,15 @@ public final class NativeBridge {
     public void error(String message) { emit("error",Json.object("message",message)); }
     public void message(String message) { emit("message",Json.object("message",message)); }
     @JavascriptInterface public void ready() { snapshot(false); }
+    @JavascriptInterface public void setAutoPreference(boolean enabled,String type,String quality) {
+        try {
+            String format=DownloadPolicy.format(type);
+            String selected=DownloadPolicy.quality(format,quality);
+            activity.getSharedPreferences("3esnap-pref",Context.MODE_PRIVATE).edit()
+                .putBoolean("auto",enabled).putString("autoType",format)
+                .putString("autoQuality",selected).apply();
+        }catch(IllegalArgumentException ignored){}
+    }
     @JavascriptInterface public void refreshLibrary() { snapshot(true); }
     public void snapshot(boolean checkFiles) {
         if(closed) return;
@@ -47,6 +56,7 @@ public final class NativeBridge {
             try {
                 JSONArray records=new JSONArray();
                 for(DownloadRecord r:app.store.all()) {
+                    if(r.hidden)continue; // No private names, thumbnails or links in WebView.
                     if(checkFiles && "completed".equals(r.status)) {
                         r.missing=!app.files.exists(r);app.store.setMissing(r.id,r.missing);
                         if(!r.missing) app.files.createThumbnail(r);
@@ -85,31 +95,88 @@ public final class NativeBridge {
                         "title",info.getTitle()==null ? "فيديو بدون عنوان" : info.getTitle(),
                         "thumbnail",thumbnail,"duration",info.getDuration(),"uploader",info.getUploader(),
                         "platform",info.getExtractor(),"qualities",qualities));
+                // Persist the 3-second transfer independent of WebView/JS timers. If the
+                // Activity backgrounds immediately after inspection, WorkManager still owns it.
+                android.content.SharedPreferences options=activity.getSharedPreferences("3esnap-pref",Context.MODE_PRIVATE);
+                if(options.getBoolean("auto",true)) {
+                    String savedType=options.getString("autoType","video");
+                    String savedQuality=options.getString("autoQuality","best");
+                    final String automaticType=DownloadPolicy.format(savedType);
+                    final String automaticQuality=DownloadPolicy.quality(automaticType,savedQuality);
+                    activity.runOnUiThread(()->activity.withDownloadPermissions(()->app.io.execute(()->{
+                        try {
+                            DownloadRecord pending=app.store.findQueuedBySource(url);
+                            if(pending==null && app.store.findActive(url,automaticType,automaticQuality)==null) {
+                                long id=app.store.enqueue(url,automaticType,automaticQuality,info.getTitle());
+                                if(id>0)DownloadWorker.schedule(activity,id,3000);
+                            }
+                            snapshot(false);
+                        } catch(Exception ex) {error("تعذر جدولة التنزيل التلقائي: "+ex.getMessage());}
+                    })));
+                }
             } catch(Exception ex) {
                 if(ex instanceof InterruptedException) Thread.currentThread().interrupt();
                 emit("inspectError",Json.object("requestId",requestId,"message",EngineRuntime.readableError(ex)));
             } finally { if(locked) EngineRuntime.WORK.unlock(); }
         });
     }
+    @JavascriptInterface public void scheduleAutoDownload(String raw,String type,String quality,String title) {
+        try {
+            String url=DownloadPolicy.normalizeUrl(raw);
+            String format=DownloadPolicy.format(type),selected=DownloadPolicy.quality(format,quality);
+            activity.runOnUiThread(()->activity.withDownloadPermissions(()->app.io.execute(()->{
+                try {
+                    DownloadRecord queued=app.store.findQueuedBySource(url);
+                    if(queued!=null) {
+                        app.store.changeQueuedOptions(queued.id,format,selected);
+                        DownloadWorker.schedule(activity,queued.id,3000);
+                    } else {
+                        // Do not schedule a duplicate transfer while this URL is already running.
+                        DownloadRecord running=app.store.findActive(url,format,selected);
+                        if(running==null) {
+                            long id=app.store.enqueue(url,format,selected,title);
+                            if(id>0)DownloadWorker.schedule(activity,id,3000);
+                        }
+                    }
+                    snapshot(false);
+                } catch(Exception ex) {error("تعذر جدولة التنزيل التلقائي: "+ex.getMessage());}
+            })));
+        } catch(Exception ex) {error(ex.getMessage());}
+    }
+    @JavascriptInterface public void cancelQueuedSource(String raw) {
+        try {
+            String url=DownloadPolicy.normalizeUrl(raw);
+            app.io.execute(()->{
+                DownloadRecord record=app.store.findQueuedBySource(url);
+                if(record!=null){app.store.cancel(record.id);DownloadWorker.cancel(activity,record.id);snapshot(false);}
+            });
+        }catch(Exception ex){error(ex.getMessage());}
+    }
     @JavascriptInterface public void startDownload(String raw,String type,String quality,String title) {
         try {
             String url=DownloadPolicy.normalizeUrl(raw);
-            String format=DownloadPolicy.format(type), selected=DownloadPolicy.quality(format,quality);
-            activity.runOnUiThread(() -> activity.withDownloadPermissions(() -> app.io.execute(() -> {
+            String format=DownloadPolicy.format(type),selected=DownloadPolicy.quality(format,quality);
+            activity.runOnUiThread(()->activity.withDownloadPermissions(()->app.io.execute(()->{
                 try {
-                    long id=app.store.enqueue(url,format,selected,title);
-                    if(id<0) { error("هذا الرابط بنفس الجودة موجود بالفعل في طابور التنزيل.");return; }
-                    activity.runOnUiThread(() -> DownloadService.start(activity,id));
-                    snapshot(false);message("أُضيف إلى طابور التنزيل.");
-                } catch(Exception ex) { error("تعذر إضافة التنزيل: "+ex.getMessage()); }
+                    DownloadRecord queued=app.store.findQueuedBySource(url);
+                    long id;
+                    if(queued!=null) {
+                        id=queued.id;app.store.changeQueuedOptions(id,format,selected);
+                    } else {
+                        id=app.store.enqueue(url,format,selected,title);
+                        if(id<0) {error("هذا الرابط بنفس الجودة نشط بالفعل.");return;}
+                    }
+                    DownloadWorker.schedule(activity,id,0);
+                    snapshot(false);message("جاري تجهيز التنزيل في الخلفية.");
+                } catch(Exception ex) {error("تعذر إضافة التنزيل: "+ex.getMessage());}
             })));
-        } catch(Exception ex) { error(ex.getMessage()); }
+        } catch(Exception ex) {error(ex.getMessage());}
     }
     @JavascriptInterface public void retry(long id) {
         if(DownloadService.isInFlight(id)) { error("انتظر انتهاء إغلاق عملية التنزيل السابقة ثم أعد المحاولة.");return; }
         activity.runOnUiThread(() -> activity.withDownloadPermissions(() -> app.io.execute(() -> {
             if(DownloadService.isInFlight(id)) { error("عملية التنزيل السابقة ما زالت تُغلق.");return; }
-            if(app.store.retry(id)) activity.runOnUiThread(() -> DownloadService.start(activity,id));
+            if(app.store.retry(id)) DownloadWorker.schedule(activity,id,0);
             else error("لا يمكن إعادة المحاولة الآن، أو أن التنزيل نفسه نشط بالفعل.");
             snapshot(false);
         })));
@@ -129,13 +196,58 @@ public final class NativeBridge {
             } catch(Exception ex) { error("تعذر قراءة الحافظة. استخدم اللصق من لوحة المفاتيح."); }
         });
     }
+    @JavascriptInterface public void openVault() {
+        activity.runOnUiThread(()->activity.startActivity(new Intent(activity,VaultActivity.class)));
+    }
+    @JavascriptInterface public void hide(long id) {
+        app.io.execute(()->{
+            DownloadRecord r=app.store.get(id);
+            if(r==null || r.hidden || !"completed".equals(r.status)||!app.files.exists(r)){
+                error("الملف غير متاح للإخفاء.");return;
+            }
+            activity.runOnUiThread(()->activity.startActivity(new Intent(activity,VaultActivity.class).putExtra("hideId",id)));
+        });
+    }
+    @JavascriptInterface public void editCategory(long id) {
+        app.io.execute(()->{
+            DownloadRecord r=app.store.get(id);
+            if(r==null || r.hidden)return;
+            activity.runOnUiThread(()->{
+                EditText input=new EditText(activity);input.setSingleLine(true);
+                input.setText(r.category);input.setHint("مثال: تعليم، ألعاب، رياضة…");
+                LinearLayout box=new LinearLayout(activity);int pad=(int)(20*activity.getResources().getDisplayMetrics().density);
+                box.setPadding(pad,pad,pad,0);box.addView(input,new LinearLayout.LayoutParams(-1,-2));
+                new AlertDialog.Builder(activity).setTitle("تصنيف الملف")
+                    .setMessage("يمكنك كتابة تصنيف مخصص، أو تركه فارغًا للاقتراح التلقائي.")
+                    .setView(box).setNegativeButton("إلغاء",null)
+                    .setPositiveButton("حفظ",(d,w)->app.io.execute(()->{
+                        String category=CategoryRules.clean(input.getText().toString());
+                        app.store.setCategory(id,category.isEmpty()?CategoryRules.suggest(r.title,r.format):category);
+                        snapshot(false);
+                    })).show();
+            });
+        });
+    }
+    @JavascriptInterface public void setCategory(long id,String name) {
+        app.io.execute(()->{
+            DownloadRecord r=app.store.get(id);
+            if(r==null || r.hidden){error("التصنيف الخاص لا يُعدل من المكتبة العامة.");return;}
+            app.store.setCategory(id,name);snapshot(false);
+        });
+    }
     @JavascriptInterface public void play(long id) {
         app.io.execute(() -> {
             DownloadRecord record=available(id);
             if(record==null) return;
             activity.runOnUiThread(() -> {
-                try { activity.startActivity(new Intent(activity,PlayerActivity.class).putExtra("id",id)); }
-                catch(Exception ex) { error("تعذر فتح المشغل."); }
+                try {
+                    if("gif".equals(record.format)) {
+                        Uri file=app.files.shareUri(record);
+                        Intent view=new Intent(Intent.ACTION_VIEW).setDataAndType(file,"image/gif");
+                        view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        activity.startActivity(Intent.createChooser(view,"عرض GIF"));
+                    } else activity.startActivity(new Intent(activity,PlayerActivity.class).putExtra("id",id));
+                } catch(Exception ex) {error("تعذر فتح المشغل أو عرض GIF.");}
             });
         });
     }
@@ -179,7 +291,7 @@ public final class NativeBridge {
     }
     private DownloadRecord available(long id) {
         DownloadRecord record=app.store.get(id);
-        if(record==null || !"completed".equals(record.status)) { error("هذا الملف غير موجود في المكتبة.");return null; }
+        if(record==null || record.hidden || !"completed".equals(record.status)) { error("هذا الملف غير متاح في المكتبة العامة.");return null; }
         if(!app.files.exists(record)) {
             app.store.setMissing(id,true);snapshot(false);
             error("الملف نُقل أو حُذف خارج التطبيق، أو انتهت صلاحية الوصول إليه. استورده مجدداً أو أعد تنزيله.");return null;
@@ -193,7 +305,7 @@ public final class NativeBridge {
                 if(!app.store.requeueRestored(id)) {
                     error("تعذرت إعادة التنزيل. تحقق من وجود رابط مصدر محفوظ وعدم وجود تنزيل آخر نشط.");return;
                 }
-                activity.runOnUiThread(() -> DownloadService.start(activity,id));
+                DownloadWorker.schedule(activity,id,0);
                 snapshot(false);message("بدأت إعادة تنزيل الملف من الرابط المحفوظ.");
             } catch(Exception ex) { error("تعذرت إعادة التنزيل: "+ex.getMessage()); }
         })));
@@ -201,7 +313,7 @@ public final class NativeBridge {
     @JavascriptInterface public void sourceAction(long id,String action) {
         app.io.execute(() -> {
             DownloadRecord record=app.store.get(id);
-            if(record==null) return;
+            if(record==null || record.hidden)return;
             activity.runOnUiThread(() -> {
                 if("edit".equals(action)) { editSource(record);return; }
                 if(record.sourceUrl.isEmpty()) { error("لا يوجد رابط محفوظ لهذا الملف. يمكنك إضافته من قائمة الملف.");return; }
@@ -237,7 +349,7 @@ public final class NativeBridge {
     @JavascriptInterface public void requestDelete(long id) {
         app.io.execute(() -> {
             DownloadRecord r=app.store.get(id);
-            if(r==null || DownloadPolicy.isActive(r.status)) return;
+            if(r==null || r.hidden || DownloadPolicy.isActive(r.status)) return;
             activity.runOnUiThread(() -> {
                 AlertDialog.Builder dialog=new AlertDialog.Builder(activity).setTitle(r.title).setNegativeButton("إلغاء",null);
                 if(r.imported || !"completed".equals(r.status)) {

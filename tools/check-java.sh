@@ -8,6 +8,9 @@ javac --release 17 -encoding UTF-8 -d .test-output/java \
   app/src/main/java/com/snapclean/app/EditPlan.java tools/EditPlanSelfTest.java
 javac --release 17 -encoding UTF-8 -cp .test-output/java -d .test-output/java \
   app/src/main/java/com/snapclean/app/BackupRules.java tools/BackupRulesSelfTest.java
+javac --release 17 -encoding UTF-8 -d .test-output/java \
+  app/src/main/java/com/snapclean/app/CategoryRules.java tools/CategoryRulesSelfTest.java
+java -cp .test-output/java com.snapclean.app.CategoryRulesSelfTest
 java -cp .test-output/java com.snapclean.app.BackupRulesSelfTest
 java -cp .test-output/java com.snapclean.app.EditPlanSelfTest
 java -cp .test-output/java com.snapclean.app.PolicySelfTest

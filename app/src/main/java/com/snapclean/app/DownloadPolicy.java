@@ -66,8 +66,9 @@ public final class DownloadPolicy {
     }
 
     public static String fileName(String title, String extension, long id) {
-        if (!"mp4".equals(extension) && !"mp3".equals(extension))
-            throw new IllegalArgumentException("Unsupported file extension");
+        // Keep imported media container types when revealing from the vault.
+        if (!extension.matches("(?i)mp4|mp3|gif|m4a|m4v|aac|wav|flac|ogg|opus|webm|mkv|mov|3gp|3g2|avi|wma|amr"))
+            throw new IllegalArgumentException("Unsupported media file extension");
         String base = title == null ? "3Esnap" : Normalizer.normalize(title, Normalizer.Form.NFC);
         base = base.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}\\u202A-\\u202E\\u2066-\\u2069]", "_")
                 .replaceAll("\\s+", " ").replaceAll("^[. ]+|[. ]+$", "");
@@ -86,6 +87,6 @@ public final class DownloadPolicy {
     }
 
     public static boolean isActive(String status) {
-        return "queued".equals(status) || "downloading".equals(status);
+        return "queued".equals(status) || "downloading".equals(status) || "waiting_network".equals(status);
     }
 }

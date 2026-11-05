@@ -28,6 +28,13 @@ public final class MediaEditExporter {
     private void ensureActive() { if(cancelled.get() || Thread.currentThread().isInterrupted()) throw new CancellationException(); }
 
     public long export(Context context,DownloadRecord original,EditPlan.Clip clip,EditPlan.Crop crop,boolean audio) throws Exception {
+        return export(context,original,clip,crop,audio,false,false);
+    }
+    /** GIF option is independent of audio mode. ReduceMusic uses speech-band filtering only. */
+    public long export(Context context,DownloadRecord original,EditPlan.Clip clip,EditPlan.Crop crop,
+                       boolean audio,boolean gif,boolean reduceMusic) throws Exception {
+        if(gif && audio)throw new IllegalArgumentException("GIF متاح للفيديو فقط.");
+        if(gif && clip.lengthMs()>15000)throw new IllegalArgumentException("اختر 15 ثانية أو أقل لإنشاء GIF.");
         Context appContext=context.getApplicationContext();
         SnapCleanApp app=SnapCleanApp.of(appContext);
         File root=new File(appContext.getCacheDir(),"edits");
@@ -35,7 +42,7 @@ public final class MediaEditExporter {
         File work=new File(root,UUID.randomUUID().toString());
         if(!work.mkdirs()) throw new IOException("تعذر إنشاء مجلد مؤقت للتحرير.");
         File source=new File(work,"source.media");
-        File output=new File(work,audio?"clip.mp3":"clip.mp4");
+        File output=new File(work,gif?"clip.gif":(audio?"clip.mp3":"clip.mp4"));
         MediaFiles.Saved published=null;
         try {
             ensureActive();
@@ -59,21 +66,22 @@ public final class MediaEditExporter {
             // Keep the shared yt-dlp/FFmpeg package stable while editing.
             EngineRuntime.WORK.lock();
             try {
-                diagnostic=run(appContext,EditPlan.ffmpeg(binary.getAbsolutePath(),source.getAbsolutePath(),output.getAbsolutePath(),clip,crop,audio,false));
-                if(diagnostic!=null && !audio && (diagnostic.toLowerCase(Locale.ROOT).contains("unknown encoder")
+                diagnostic=run(appContext,gif ? EditPlan.gif(binary.getAbsolutePath(),source.getAbsolutePath(),output.getAbsolutePath(),clip,crop)
+                    : EditPlan.ffmpeg(binary.getAbsolutePath(),source.getAbsolutePath(),output.getAbsolutePath(),clip,crop,audio,false,reduceMusic));
+                if(diagnostic!=null && !audio && !gif && (diagnostic.toLowerCase(Locale.ROOT).contains("unknown encoder")
                         || diagnostic.toLowerCase(Locale.ROOT).contains("encoder not found"))) {
                     ensureActive();
                     if(output.exists()) output.delete();
-                    diagnostic=run(appContext,EditPlan.ffmpeg(binary.getAbsolutePath(),source.getAbsolutePath(),output.getAbsolutePath(),clip,crop,false,true));
+                    diagnostic=run(appContext,EditPlan.ffmpeg(binary.getAbsolutePath(),source.getAbsolutePath(),output.getAbsolutePath(),clip,crop,false,true,reduceMusic));
                 }
             } finally { EngineRuntime.WORK.unlock(); }
             if(diagnostic!=null) throw new IOException("تعذّر تحويل المقطع: "+diagnostic);
             ensureActive();
             if(!output.isFile() || output.length()<128) throw new IOException("لم ينتج ملف صالح من القص.");
-            String extension=audio?"mp3":"mp4";
-            String title="مقطع — "+(original.title==null?"3Esnap":original.title);
+            String extension=gif?"gif":(audio?"mp3":"mp4");
+            String title=(gif?"GIF — ":"مقطع — ")+(original.title==null?"3Esnap":original.title);
             String filename=DownloadPolicy.fileName(title,extension,System.currentTimeMillis());
-            published=app.files.publish(output,filename,audio,cancelled::get);
+            published=app.files.publish(output,filename,gif?"image/gif":(audio?"audio/mpeg":"video/mp4"),cancelled::get);
             ensureActive();
             long id=app.store.addEdited(original,title,published);
             if(id<0) throw new IOException("تعذر حفظ المقطع في المكتبة.");

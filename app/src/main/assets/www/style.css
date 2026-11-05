@@ -51,3 +51,14 @@ main{width:100%}
 #panel-download.has-result .result-card{margin-top:0}
 #panel-download.has-result .queue-section{margin-top:18px}
 @media(max-width:480px){.result-nav{font-size:12px}.result-nav .compact{font-size:11px}#panel-download.has-result .result-body{padding:14px}}
+
+/* v2.3: compact categories and security controls; no horizontal page overflow. */
+.auto-switch{display:block;font-size:12px;color:var(--text);padding:10px 0 13px;line-height:1.65}
+.auto-switch input{vertical-align:middle;accent-color:var(--accent);width:18px;height:18px;margin-inline-end:6px}
+.auto-switch small{display:block;color:var(--muted);font-size:10px;padding-inline-start:28px}
+.category-toolbar{display:flex;align-items:center;gap:10px;margin:-8px 0 16px;font-size:11px;color:var(--muted)}
+.category-toolbar select{flex:1;min-width:0;max-width:240px}
+.category-chip{display:inline-block;margin-top:8px;padding:2px 8px;font-size:10px;border:1px solid var(--line);border-radius:20px;color:var(--accent);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.settings-row input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:var(--accent)}
+.bottom-nav .nav-item{min-width:0;font-size:10px}
+@media(max-width:360px){.filters{max-width:100%;flex-wrap:wrap}.category-toolbar{flex-wrap:wrap}}

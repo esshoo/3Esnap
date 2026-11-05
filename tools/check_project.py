@@ -46,6 +46,16 @@ check('ClipData.newRawUri' in java,'Sharing must carry a temporary content URI g
 check(not re.search(r'\.setClipData\([^\n]*\)\.addFlags\(', java),
       'Intent.setClipData returns void: apply permission flags in a separate statement')
 check('source_url TEXT' in java,'Missing durable source URL field')
+check('ALTER TABLE downloads ADD COLUMN hidden' in java,'Vault migration must not erase old rows')
+check('ALTER TABLE downloads ADD COLUMN category' in java,'Category migration must not erase old rows')
+check('AES/GCM/NoPadding' in java and 'AndroidKeyStore' in java,'Vault needs Android Keystore authenticated encryption at rest')
+check('BiometricPrompt' in java and 'BIOMETRIC_STRONG' in java,'Vault must require strong biometrics')
+check('if(r.hidden)continue' in java,'Private records must not reach ordinary WebView/export')
+check('record.hidden' in java and 'return null' in java,'Hidden records must be blocked by ordinary media actions')
+check('NetworkType.CONNECTED' in java and 'Result.retry()' in java,'Network-constrained retry worker missing')
+check('setInitialDelay' in java,'Durable delayed start missing')
+check('palettegen=' in java and 'paletteuse=' in java,'GIF palette conversion missing')
+check('class CategoryRules' in java and 'setCategory(' in java,'User-defined/local categories missing')
 check('class EditorActivity' in java and 'class MediaEditExporter' in java,'Missing native trim/crop feature')
 check('class CropOverlayView' in java and 'selectedPixels()' in java,'Missing adjustable video crop selection')
 check('addEdited(' in java and 'source.sourceUrl' in java,'Edited clips should retain the original source URL')
@@ -82,6 +92,22 @@ check('new Intent(this,CropActivity.class)' in java and 'selectedCrop=next' in j
 check('gesture=2' in java and 'gesture=3' in java and 'gesture=4' in java and 'gesture=5' in java,
       'All four crop corners should be resizable')
 check('class EditPlan' in java and 'ffmpeg(' in java,'Missing tested trim/crop parameters')
+check("status IN ('queued','downloading','waiting_network')" in java,
+      'Network-waiting downloads must block duplicates and permit cancellation')
+check("status NOT IN ('queued','downloading','waiting_network')" in java,
+      'Network-waiting downloads must not be deleted while pending')
+check('byte[] last=cipher.doFinal()' in java and 'AES/GCM/NoPadding' in java,
+      'Vault must verify the GCM authentication tag before exposing decrypted media')
+check('FOREGROUND_SERVICE_TYPE_DATA_SYNC' in java and 'foregroundInfo(' in java,
+      'Android 14+ WorkManager downloads must declare a dataSync foreground service type')
+check('db.reveal(id,output)' in java and 'v.put("filename",published.name)' in java,
+      'Vault restore must keep file metadata aligned with newly published content')
+check('if(r.hidden)continue' in java,
+      'Hidden vault records must be excluded from the public library')
+check('if("gif".equals(r.format))' in java and
+      java.index('if("gif".equals(r.format))') < java.index('if ("audio".equals(r.format))'),
+      'GIF image thumbnail decoding must be separate from video metadata decoding')
+
 check('overflow-x:clip' in (ROOT/'app/src/main/assets/www/style.css').read_text(encoding='utf-8'), 'Responsive overflow safeguards missing')
 check('has-result' in js and 'newLinkButton' in html,'Download flow must collapse excessive vertical content')
 check('android:name=".EditorActivity"' in (ROOT/'app/src/main/AndroidManifest.xml').read_text(), 'Editor activity not registered')

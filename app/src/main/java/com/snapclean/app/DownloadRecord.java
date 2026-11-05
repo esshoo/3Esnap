@@ -8,7 +8,8 @@ public final class DownloadRecord {
     public long id, size, createdAt;
     public String sourceUrl, title, format, quality, uri, mime, filename, status, message;
     public int progress;
-    public boolean imported, missing;
+    public boolean imported, missing, hidden;
+    public String category;
 
     static DownloadRecord from(Cursor c) {
         DownloadRecord r = new DownloadRecord();
@@ -27,6 +28,8 @@ public final class DownloadRecord {
         r.progress = c.getInt(c.getColumnIndexOrThrow("progress"));
         r.imported = c.getInt(c.getColumnIndexOrThrow("imported")) == 1;
         r.missing = c.getInt(c.getColumnIndexOrThrow("missing")) == 1;
+        r.hidden = c.getInt(c.getColumnIndexOrThrow("hidden")) == 1;
+        r.category = c.getString(c.getColumnIndexOrThrow("category"));
         return r;
     }
 
@@ -36,7 +39,7 @@ public final class DownloadRecord {
                 .put("sourceUrl", sourceUrl).put("title", title).put("format", format)
                 .put("quality", quality).put("mime", mime).put("filename", filename)
                 .put("status", status).put("message", message).put("progress", progress)
-                .put("imported", imported).put("missing", missing)
+                .put("imported", imported).put("missing", missing).put("category", category)
                 .put("thumbnail", "https://appassets.androidplatform.net/thumbs/" + id + ".jpg");
     }
 }

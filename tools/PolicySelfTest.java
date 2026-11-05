@@ -38,6 +38,8 @@ public final class PolicySelfTest {
         check(DownloadPolicy.fileName("CON","mp3",4).startsWith("3Esnap_CON"),"reserved filename");
         check(DownloadPolicy.fileName("😀".repeat(200),"mp4",1).getBytes(StandardCharsets.UTF_8).length<=210,"byte-aware filename bound");
         rejects(()->DownloadPolicy.fileName("x","exe",1),"unknown extension");
+        check(DownloadPolicy.fileName("صوت مستورد","m4a",21).endsWith("_21.m4a"),"vault preserves imported audio formats");
+        check(DownloadPolicy.fileName("مقطع","webm",22).endsWith("_22.webm"),"vault preserves imported video formats");
         check(DownloadPolicy.canRetry("failed")&&DownloadPolicy.canRetry("cancelled"),"retry terminal errors");
         check(!DownloadPolicy.canRetry("completed")&&!DownloadPolicy.canRetry("downloading"),"no duplicate retry");
         check(DownloadPolicy.isActive("queued")&&DownloadPolicy.isActive("downloading"),"active state");

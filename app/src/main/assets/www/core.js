@@ -12,7 +12,8 @@
     const query = normalize(options.query), filter = options.filter || 'all';
     const list = completed(rows).filter(r =>
       (filter === 'all' || r.format === filter) &&
-      (!query || normalize([r.title, r.filename, r.sourceUrl].join(' ')).includes(query)));
+      (!options.category || options.category==='all' || r.category===options.category) &&
+      (!query || normalize([r.title, r.filename, r.sourceUrl, r.category].join(' ')).includes(query)));
     const sort = options.sort || 'newest';
     const compare = {
       newest: (a,b) => Number(b.createdAt)-Number(a.createdAt) || Number(b.id)-Number(a.id),
@@ -37,7 +38,7 @@
     if(seconds >= 3600) parts.unshift(String(Math.floor(seconds/3600)));
     return parts.join(':');
   }
-  function isActive(status) { return status === 'queued' || status === 'downloading'; }
+  function isActive(status) { return status === 'queued' || status === 'downloading' || status === 'waiting_network'; }
   function stats(rows) {
     const files = completed(rows);
     return { count: files.length, bytes: files.reduce((sum,r) => sum + (r.missing ? 0 : Math.max(0,Number(r.size)||0)),0),

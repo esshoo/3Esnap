@@ -15,6 +15,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -49,7 +50,8 @@ public final class EditorActivity extends AppCompatActivity {
     private Button cropButton;
     private TextView cropStatus;
     private SeekBar seek,startSeek,endSeek;
-    private Button play,save,share;
+    private Button play,save,share,gifSave,gifShare;
+    private CheckBox reduceMusic;
     private TextView playerTime,startLabel,endLabel,selectedLength,status;
     private ProgressBar spinner;
     private boolean prepared,playingPreview,busy,audioMode,resumed,updating;
@@ -185,13 +187,32 @@ public final class EditorActivity extends AppCompatActivity {
             if(videoWidth<16 || videoHeight<16) {cropButton.setEnabled(false);cropButton.setText("قص الإطار غير متاح");}
             updateCropStatus();
         }
-        LinearLayout bottom=new LinearLayout(this);bottom.setPadding(dp(12),dp(8),dp(12),dp(12));bottom.setGravity(Gravity.CENTER_VERTICAL);
+        reduceMusic=new CheckBox(this);
+        reduceMusic.setText("تقليل الموسيقى الخلفية (تجريبي) — قد يؤثر على الصوت والكلام");
+        reduceMusic.setTextColor(Color.WHITE);reduceMusic.setTextSize(12);
+        body.addView(reduceMusic);
+        TextView musicTip=text("هذه فلترة للترددات والضوضاء فقط، وليست فصلًا دقيقًا للموسيقى عن الصوت بالذكاء الاصطناعي.",11);
+        musicTip.setTextColor(0xffa2b1c4);body.addView(musicTip);
+        LinearLayout bottomArea=new LinearLayout(this);bottomArea.setOrientation(LinearLayout.VERTICAL);
+        bottomArea.setBackgroundColor(PANEL);
+        LinearLayout bottom=new LinearLayout(this);bottom.setPadding(dp(12),dp(8),dp(12),dp(8));bottom.setGravity(Gravity.CENTER_VERTICAL);
         bottom.setBackgroundColor(PANEL);
         save=button("قص وحفظ",true);share=button("قص ومشاركة",false);
         bottom.addView(save,new LinearLayout.LayoutParams(0,dp(54),1));
         LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(0,dp(54),1);sp.setMarginStart(dp(10));bottom.addView(share,sp);
-        root.addView(bottom);
-        save.setOnClickListener(v->exportClip(false));share.setOnClickListener(v->exportClip(true));
+        bottomArea.addView(bottom);
+        save.setOnClickListener(v->exportClip(false,false));share.setOnClickListener(v->exportClip(true,false));
+        if(!audioMode) {
+            LinearLayout gifRow=new LinearLayout(this);gifRow.setPadding(dp(12),0,dp(12),dp(8));
+            gifSave=button("حفظ GIF (15 ث كحد أقصى)",false);
+            gifShare=button("مشاركة GIF",false);
+            gifRow.addView(gifSave,new LinearLayout.LayoutParams(0,dp(48),1));
+            LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(0,dp(48),1);gp.setMarginStart(dp(8));
+            gifRow.addView(gifShare,gp);bottomArea.addView(gifRow);
+            gifSave.setOnClickListener(v->exportClip(false,true));
+            gifShare.setOnClickListener(v->exportClip(true,true));
+        }
+        root.addView(bottomArea);
         spinner=new ProgressBar(this);spinner.setIndeterminate(true);spinner.setVisibility(View.GONE);
         status=text("",11);status.setGravity(Gravity.CENTER);status.setTextColor(0xffa2b1c4);
         LinearLayout line=new LinearLayout(this);line.setGravity(Gravity.CENTER_VERTICAL);line.setBackgroundColor(PANEL);
@@ -260,19 +281,24 @@ public final class EditorActivity extends AppCompatActivity {
             Toast.makeText(this,"تم تطبيق مساحة القص. احفظ الفيديو للحصول على النسخة الجديدة.",Toast.LENGTH_SHORT).show();
         } catch(IllegalArgumentException ex) {Toast.makeText(this,ex.getMessage(),Toast.LENGTH_LONG).show();}
     }
-    private void exportClip(boolean shareAfter) {
+    private void exportClip(boolean shareAfter,boolean gif) {
         if(busy)return;
         EditPlan.Clip selected;EditPlan.Crop selection=null;
         try {selected=EditPlan.clip(trimStart,trimEnd,durationMs);if(!audioMode)selection=selectedCrop;}
         catch(IllegalArgumentException ex){Toast.makeText(this,ex.getMessage(),Toast.LENGTH_LONG).show();return;}
+        if(gif && selected.lengthMs()>15000) {
+            Toast.makeText(this,"حدد مدة لا تتجاوز 15 ثانية لحفظ GIF.",Toast.LENGTH_LONG).show();return;
+        }
         pause();busy=true;save.setEnabled(false);share.setEnabled(false);play.setEnabled(false);
+        if(gifSave!=null)gifSave.setEnabled(false);if(gifShare!=null)gifShare.setEnabled(false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         spinner.setVisibility(View.VISIBLE);status.setText("جاري قص المقطع وحفظه… خليك في الشاشة لحد ما يكتمل.");
         exporter=new MediaEditExporter();
         final EditPlan.Crop editCrop=selection;
+        final boolean filterAudio=reduceMusic.isChecked() && !gif;
         worker.execute(()->{
             try {
-                long id=exporter.export(getApplicationContext(),record,selected,editCrop,audioMode);
+                long id=exporter.export(getApplicationContext(),record,selected,editCrop,audioMode,gif,filterAudio);
                 runOnUiThread(()->{
                     if(isFinishing() || isDestroyed())return;
                     finishExport("تم حفظ المقطع في مكتبة 3Esnap.");
@@ -286,6 +312,7 @@ public final class EditorActivity extends AppCompatActivity {
     private void finishExport(String result) {
         busy=false;getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         spinner.setVisibility(View.GONE);save.setEnabled(true);share.setEnabled(true);play.setEnabled(prepared);
+        if(gifSave!=null)gifSave.setEnabled(true);if(gifShare!=null)gifShare.setEnabled(true);
         status.setText(result);Toast.makeText(this,result,Toast.LENGTH_LONG).show();
     }
     private void shareClip(long id) {

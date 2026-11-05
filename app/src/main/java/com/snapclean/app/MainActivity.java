@@ -101,6 +101,8 @@ public final class MainActivity extends AppCompatActivity {
                     if(!path.matches("[0-9]+\\.jpg")) return blocked();
                     try {
                         long id=Long.parseLong(path.substring(0,path.length()-4));
+                        DownloadRecord item=app.store.get(id);
+                        if(item==null || item.hidden)return blocked();
                         File file=app.files.thumbnailFile(id);
                         WebResourceResponse response;
                         if(file.isFile()) response=new WebResourceResponse("image/jpeg",null,new FileInputStream(file));
@@ -222,7 +224,7 @@ public final class MainActivity extends AppCompatActivity {
     }
     public void chooseImports() {
         Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE)
-                .putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"video/*","audio/*"}).putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true)
+                .putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"video/*","audio/*","image/gif"}).putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
         try { startActivityForResult(i,IMPORT_FILES); }
         catch(Exception ex) { bridge.error("لم أجد منتقي ملفات على الجهاز."); }
@@ -305,9 +307,12 @@ public final class MainActivity extends AppCompatActivity {
             app.io.execute(() -> {
                 try {
                     JSONArray items=new JSONArray();
-                    for(DownloadRecord r:app.store.all()) items.put(Json.object("title",r.title,"filename",r.filename,
+                    for(DownloadRecord r:app.store.all()) {
+                        if(r.hidden)continue; // Never export private metadata without biometric authorization.
+                        items.put(Json.object("title",r.title,"filename",r.filename,
                             "sourceUrl",r.sourceUrl,"format",r.format,"quality",r.quality,
-                            "createdAt",r.createdAt,"size",r.size,"status",r.status));
+                            "createdAt",r.createdAt,"size",r.size,"status",r.status,"category",r.category));
+                    }
                     String json=Json.object("app","3Esnap","schemaVersion",2,"exportedAt",System.currentTimeMillis(),"items",items).toString(2);
                     try(OutputStream out=getContentResolver().openOutputStream(destination,"w")) {
                         if(out==null) throw new java.io.IOException("لا يمكن الكتابة إلى الوجهة.");

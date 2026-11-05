@@ -13,7 +13,7 @@ import org.json.JSONObject;
 /** Durable, app-private library. Only UI preferences live in WebView localStorage. */
 public final class DownloadStore extends SQLiteOpenHelper {
     public DownloadStore(Context c) {
-        super(c.getApplicationContext(), "3esnap-library.db", null, 1);
+        super(c.getApplicationContext(), "3esnap-library.db", null, 2);
         setWriteAheadLoggingEnabled(true);
     }
     @Override public void onCreate(SQLiteDatabase db) {
@@ -24,7 +24,8 @@ public final class DownloadStore extends SQLiteOpenHelper {
                 + "filename TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'queued',"
                 + "message TEXT NOT NULL DEFAULT '', progress INTEGER NOT NULL DEFAULT 0,"
                 + "size INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL,"
-                + "imported INTEGER NOT NULL DEFAULT 0, missing INTEGER NOT NULL DEFAULT 0)");
+                + "imported INTEGER NOT NULL DEFAULT 0, missing INTEGER NOT NULL DEFAULT 0,"
+                + "hidden INTEGER NOT NULL DEFAULT 0, category TEXT NOT NULL DEFAULT '')");
         db.execSQL("CREATE INDEX downloads_state ON downloads(status)");
         db.execSQL("CREATE INDEX downloads_source ON downloads(source_url,format,quality)");
         db.execSQL("CREATE UNIQUE INDEX downloads_uri ON downloads(uri) WHERE uri <> ''");
@@ -36,8 +37,11 @@ public final class DownloadStore extends SQLiteOpenHelper {
         if(!db.isReadOnly()) db.execSQL("CREATE INDEX IF NOT EXISTS downloads_filename_format ON downloads(filename,format)");
     }
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // Future versions must add explicit, non-destructive migrations here.
-        throw new IllegalStateException("No migration from " + oldVersion + " to " + newVersion);
+        // Non-destructive schema migration from the public 2.2.0 library.
+        if(oldVersion<2) {
+            db.execSQL("ALTER TABLE downloads ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE downloads ADD COLUMN category TEXT NOT NULL DEFAULT ''");
+        }
     }
     public synchronized long enqueue(String url, String type, String quality, String title) {
         if (findActive(url, type, quality) != null) return -1;
@@ -45,14 +49,21 @@ public final class DownloadStore extends SQLiteOpenHelper {
         v.put("source_url", url); v.put("format", type); v.put("quality", quality);
         v.put("title", title == null || title.trim().isEmpty() ? "تنزيل جديد" : title.substring(0, Math.min(512, title.length())));
         v.put("created_at", System.currentTimeMillis());
+        v.put("category", CategoryRules.suggest(title,type));
         v.put("message", "في انتظار التنزيل");
         return getWritableDatabase().insertOrThrow("downloads", null, v);
     }
-    private DownloadRecord findActive(String url, String type, String quality) {
+    public synchronized DownloadRecord findActive(String url, String type, String quality) {
         try (Cursor c = getReadableDatabase().query("downloads", null,
-                "source_url=? AND format=? AND quality=? AND status IN ('queued','downloading')",
+                "source_url=? AND format=? AND quality=? AND status IN ('queued','downloading','waiting_network')",
                 new String[]{url,type,quality}, null,null,null,"1")) {
             return c.moveToFirst() ? DownloadRecord.from(c) : null;
+        }
+    }
+    public synchronized DownloadRecord findQueuedBySource(String url) {
+        try(Cursor c=getReadableDatabase().query("downloads",null,
+            "source_url=? AND status IN ('queued','waiting_network')",new String[]{url},null,null,"created_at DESC","1")) {
+            return c.moveToFirst()?DownloadRecord.from(c):null;
         }
     }
     public synchronized DownloadRecord get(long id) {
@@ -68,10 +79,33 @@ public final class DownloadStore extends SQLiteOpenHelper {
         }
         return records;
     }
+    public synchronized List<DownloadRecord> hiddenFiles() {
+        ArrayList<DownloadRecord> records=new ArrayList<>();
+        try(Cursor c=getReadableDatabase().query("downloads",null,"hidden=1",null,null,null,"created_at DESC, _id DESC")) {
+            while(c.moveToNext()) records.add(DownloadRecord.from(c));
+        }
+        return records;
+    }
+    public synchronized boolean setHidden(long id,boolean hidden,String uri,boolean imported) {
+        ContentValues v=new ContentValues();v.put("hidden",hidden?1:0);v.put("uri",uri);
+        v.put("imported",imported?1:0);v.put("missing",0);
+        return getWritableDatabase().update("downloads",v,"_id=? AND status='completed'",new String[]{Long.toString(id)})==1;
+    }
+    public synchronized boolean reveal(long id, MediaFiles.Saved published) {
+        ContentValues v=new ContentValues();v.put("hidden",0);v.put("uri",published.uri);
+        v.put("imported",0);v.put("missing",0);v.put("filename",published.name);
+        v.put("size",published.size);v.put("mime",published.mime);
+        return getWritableDatabase().update("downloads",v,"_id=? AND hidden=1 AND status='completed'",
+            new String[]{Long.toString(id)})==1;
+    }
+    public synchronized void setCategory(long id,String category) {
+        ContentValues v=new ContentValues();v.put("category",CategoryRules.clean(category));
+        getWritableDatabase().update("downloads",v,"_id=?",new String[]{Long.toString(id)});
+    }
     public synchronized boolean running(long id) {
         ContentValues v = new ContentValues(); v.put("status","downloading");
         v.put("message","جاري تجهيز محرك التنزيل…"); v.put("progress",0);
-        return getWritableDatabase().update("downloads",v,"_id=? AND status='queued'",new String[]{Long.toString(id)}) == 1;
+        return getWritableDatabase().update("downloads",v,"_id=? AND status IN ('queued','waiting_network')",new String[]{Long.toString(id)}) == 1;
     }
     public synchronized void progress(long id, int percent, String text) {
         ContentValues v = new ContentValues(); v.put("progress",Math.max(0,Math.min(99,percent)));
@@ -86,11 +120,11 @@ public final class DownloadStore extends SQLiteOpenHelper {
     }
     public synchronized void fail(long id, String text) {
         ContentValues v = new ContentValues(); v.put("status","failed"); v.put("message",text);
-        getWritableDatabase().update("downloads",v,"_id=? AND status IN ('queued','downloading')",new String[]{Long.toString(id)});
+        getWritableDatabase().update("downloads",v,"_id=? AND status IN ('queued','downloading','waiting_network')",new String[]{Long.toString(id)});
     }
     public synchronized void cancel(long id) {
         ContentValues v = new ContentValues(); v.put("status","cancelled"); v.put("message","تم إلغاء التنزيل");
-        getWritableDatabase().update("downloads",v,"_id=? AND status IN ('queued','downloading')",new String[]{Long.toString(id)});
+        getWritableDatabase().update("downloads",v,"_id=? AND status IN ('queued','downloading','waiting_network')",new String[]{Long.toString(id)});
     }
     public synchronized boolean retry(long id) {
         DownloadRecord record = get(id);
@@ -101,14 +135,27 @@ public final class DownloadStore extends SQLiteOpenHelper {
         return getWritableDatabase().update("downloads",v,"_id=?",new String[]{Long.toString(id)}) == 1;
     }
     public synchronized void markInterrupted(String reason) {
-        ContentValues v = new ContentValues(); v.put("status","failed"); v.put("message",reason);
-        getWritableDatabase().update("downloads",v,"status IN ('queued','downloading')",null);
+        // WorkManager owns the durable queue. Preserve queued jobs across process death.
+        ContentValues v=new ContentValues();v.put("status","queued");v.put("message",reason);
+        getWritableDatabase().update("downloads",v,"status='downloading'",null);
+    }
+    public synchronized void deferForNetwork(long id,String reason) {
+        ContentValues v=new ContentValues();v.put("status","waiting_network");v.put("message",reason);
+        getWritableDatabase().update("downloads",v,"_id=? AND status IN ('queued','downloading','waiting_network')",new String[]{Long.toString(id)});
+    }
+    public synchronized boolean autoRetry(long id) {
+        ContentValues v=new ContentValues();v.put("status","queued");v.put("message","إعادة المحاولة تلقائياً عند توفر الشبكة");
+        return getWritableDatabase().update("downloads",v,"_id=? AND status='waiting_network'",new String[]{Long.toString(id)})==1;
+    }
+    public synchronized void changeQueuedOptions(long id,String format,String quality) {
+        ContentValues v=new ContentValues();v.put("format",format);v.put("quality",quality);
+        getWritableDatabase().update("downloads",v,"_id=? AND status IN ('queued','waiting_network')",new String[]{Long.toString(id)});
     }
     public synchronized long importFile(String uri, String name, String mime, long size) {
         try (Cursor c = getReadableDatabase().query("downloads", new String[]{"_id"},"uri=?",new String[]{uri},null,null,null)) {
             if (c.moveToFirst()) return -1;
         }
-        String type=mime.startsWith("audio/") ? "audio" : "video";
+        String type=mime.startsWith("audio/") ? "audio" : ("image/gif".equals(mime)?"gif":"video");
         // A JSON restore produces link-only placeholders; importing the matching real
         // file reattaches it to the same record, preserving the original source URL.
         try(Cursor c=getReadableDatabase().query("downloads",new String[]{"_id"},
@@ -126,6 +173,7 @@ public final class DownloadStore extends SQLiteOpenHelper {
         v.put("mime",mime); v.put("size",size); v.put("format",type);
         v.put("status","completed"); v.put("imported",1); v.put("progress",100);
         v.put("created_at",System.currentTimeMillis());
+        v.put("category",CategoryRules.suggest(name,type));
         return getWritableDatabase().insertOrThrow("downloads",null,v);
     }
     public static final class RestoreResult {
@@ -154,6 +202,8 @@ public final class DownloadStore extends SQLiteOpenHelper {
                     if(title.isEmpty()) title="رابط محفوظ";
                     String format=BackupRules.format(item.optString("format",""),filename);
                     String quality=BackupRules.quality(format,item.optString("quality",""));
+                    String category=CategoryRules.clean(item.optString("category",""));
+                    if(category.isEmpty())category=CategoryRules.suggest(title,format);
                     // First enrich the user's EXISTING downloaded media; never replace a
                     // non-empty source link with a different one.
                     boolean matched=false;
@@ -193,8 +243,8 @@ public final class DownloadStore extends SQLiteOpenHelper {
                     // playable, restore a stale URI or silently request storage access.
                     ContentValues v=new ContentValues();
                     v.put("source_url",url);v.put("title",title);v.put("filename",filename);
-                    v.put("format",format);v.put("quality",quality);
-                    v.put("mime","audio".equals(format)?"audio/mpeg":"video/mp4");
+                    v.put("format",format);v.put("quality",quality);v.put("category",category);
+                    v.put("mime","audio".equals(format)?"audio/mpeg":("gif".equals(format)?"image/gif":"video/mp4"));
                     v.put("status","completed");v.put("message","رابط مستعاد — الملف يحتاج إعادة تنزيل أو ربط");
                     v.put("uri","");v.put("progress",100);v.put("size",0);
                     v.put("created_at",BackupRules.timestamp(item.optLong("createdAt",now),now));
@@ -224,7 +274,7 @@ public final class DownloadStore extends SQLiteOpenHelper {
         ContentValues v=new ContentValues();
         v.put("source_url",source.sourceUrl==null?"":source.sourceUrl);
         v.put("title",title);
-        v.put("format",saved.mime.startsWith("audio/")?"audio":"video");
+        v.put("format",saved.mime.startsWith("audio/")?"audio":("image/gif".equals(saved.mime)?"gif":"video"));
         v.put("quality","edited");
         v.put("uri",saved.uri);
         v.put("mime",saved.mime);
@@ -234,7 +284,7 @@ public final class DownloadStore extends SQLiteOpenHelper {
         v.put("progress",100);
         v.put("size",saved.size);
         v.put("created_at",System.currentTimeMillis());
-        v.put("imported",0);
+        v.put("imported",0);v.put("category",source.category==null||source.category.isEmpty()?CategoryRules.suggest(title,saved.mime.startsWith("audio/")?"audio":("image/gif".equals(saved.mime)?"gif":"video")):source.category);
         return getWritableDatabase().insertOrThrow("downloads",null,v);
     }
     public synchronized void setSource(long id, String url) {
@@ -246,6 +296,6 @@ public final class DownloadStore extends SQLiteOpenHelper {
         getWritableDatabase().update("downloads",v,"_id=?",new String[]{Long.toString(id)});
     }
     public synchronized void remove(long id) {
-        getWritableDatabase().delete("downloads","_id=? AND status NOT IN ('queued','downloading')",new String[]{Long.toString(id)});
+        getWritableDatabase().delete("downloads","_id=? AND status NOT IN ('queued','downloading','waiting_network')",new String[]{Long.toString(id)});
     }
 }

@@ -6,7 +6,7 @@
     get(key, fallback) { try { return localStorage.getItem(`3esnap.${key}`) || fallback; } catch (_) { return fallback; } },
     set(key, value) { try { localStorage.setItem(`3esnap.${key}`, String(value)); } catch (_) { /* Device storage may be full. */ } }
   };
-  const state = { rows: [], video: null, tab: 'download', filter: 'all', query: '', sort: 'newest',
+  const state = { rows: [], video: null, tab: 'download', filter: 'all', category: 'all', query: '', sort: 'newest',
     view: storage.get('view', 'grid') === 'list' ? 'list' : 'grid', limit: 60, requestId: '', sheetId: null,
     theme: storage.get('theme', 'dark'), inspecting: false, engineBusy: false };
   let toastTimer, lastFocus;
@@ -69,6 +69,15 @@
     setFormat(); $('resultCard').hidden=false;
     $('resultNav').hidden=false;$('panel-download').classList.add('has-result');
     window.scrollTo(0,0);
+    if($('autoDownloadSwitch').checked) scheduleAuto();
+  }
+  function saveAutoPreference() {
+    if(window.AndroidNative)call('setAutoPreference',$('autoDownloadSwitch').checked,$('formatSelect').value,$('qualitySelect').value);
+  }
+  function scheduleAuto() {
+    if(!state.video || !$('autoDownloadSwitch').checked) return;
+    saveAutoPreference();
+    call('scheduleAutoDownload',state.video.url,$('formatSelect').value,$('qualitySelect').value,state.video.title);
   }
   function setFormat() {
     const type=$('formatSelect').value; storage.set('format',type);
@@ -95,7 +104,7 @@
     switch(event.type) {
       case 'snapshot':
         state.rows=Array.isArray(d.items)?d.items:[];
-        $('appVersion').textContent=`${d.version || '2.2.0'}${d.buildType==='debug'?' · DEBUG':''}`;
+        $('appVersion').textContent=`${d.version || '2.3.0'}${d.buildType==='debug'?' · DEBUG':''}`;
         $('engineVersion').textContent=d.engineVersion || 'المحرك المرفق';
         renderLibrary();renderQueue();break;
       case 'inspect': if(d.requestId===state.requestId) renderResult(d);break;
@@ -117,7 +126,7 @@
     const image=el('img');image.alt='';image.loading='lazy';image.referrerPolicy='no-referrer';setImage(image,record.thumbnail);
     const overlay=el('span','play-overlay');overlay.append(icon(record.format==='audio'?'music':'play'));open.append(image,overlay);
     open.addEventListener('click',()=>call('play',Number(record.id)));
-    const kind=el('span','media-kind',record.format==='audio'?'AUDIO':'VIDEO');kind.dir='ltr';
+    const kind=el('span','media-kind',record.format==='audio'?'AUDIO':(record.format==='gif'?'GIF':'VIDEO'));kind.dir='ltr';
     const more=actionButton(`خيارات ${record.title}`,'more',()=>openSheet(record.id),'icon-button card-more');more.dataset.action='menu';
     cover.append(open,kind,more);
     const body=el('div','card-body');const title=el('h3','card-title',record.title || record.filename);title.title=record.filename || record.title;
@@ -130,11 +139,17 @@
         ()=>call(recover?'redownloadRestored':'play',Number(record.id)),'card-play-button');
     play.append(el('span','',recover?'إعادة تنزيل':'تشغيل'));play.disabled=Boolean(record.missing && !recover);
     const share=actionButton('مشاركة الملف','share',()=>call('share',Number(record.id)));share.disabled=Boolean(record.missing);share.dataset.action='share';actions.append(play,share);
+    if(record.category)body.append(el('span','category-chip',record.category));
     body.append(title,meta,source,actions);card.append(cover,body);return card;
   }
   function renderLibrary() {
     const stats=C.stats(state.rows);$('totalCount').textContent=String(stats.count);$('totalSize').textContent=C.formatBytes(stats.bytes);
     $('libraryBadge').textContent=stats.count>99?'99+':String(stats.count);$('libraryBadge').hidden=stats.count===0;
+    const categories=[...new Set(state.rows.filter(r=>r.status==='completed'&&r.category).map(r=>r.category))].sort((a,b)=>a.localeCompare(b,'ar'));
+    const categorySelect=$('categoryFilter'),current=state.category;
+    categorySelect.replaceChildren(new Option('كل التصنيفات','all'),...categories.map(name=>new Option(name,name)));
+    if(current!=='all' && !categories.includes(current))state.category='all';
+    categorySelect.value=state.category;
     const files=C.selectFiles(state.rows,state);const grid=$('libraryGrid');grid.classList.toggle('list',state.view==='list');
     $('gridButton').classList.toggle('selected',state.view==='grid');$('listButton').classList.toggle('selected',state.view==='list');
     $('gridButton').setAttribute('aria-pressed',String(state.view==='grid'));$('listButton').setAttribute('aria-pressed',String(state.view==='list'));
@@ -160,7 +175,7 @@
         actions.append(actionButton('إزالة السجل','trash',()=>call('requestDelete',Number(record.id))));
       }
       top.append(info,actions);card.append(top);
-      const status=el('p',`job-status ${record.status==='failed'?'failed':''}`,record.message || ({queued:'في الانتظار',downloading:'جاري التنزيل',failed:'تعذر التنزيل',cancelled:'تم الإلغاء'}[record.status] || ''));
+      const status=el('p',`job-status ${record.status==='failed'?'failed':''}`,record.message || ({queued:'في الانتظار',downloading:'جاري التنزيل',failed:'تعذر التنزيل',cancelled:'تم الإلغاء',waiting_network:'في انتظار عودة الاتصال'}[record.status] || ''));
       card.append(status);
       if(C.isActive(record.status)) {
         const track=el('div','progress-track'),fill=el('div','progress-fill');const p=Math.max(0,Math.min(100,Number(record.progress)||0));
@@ -177,11 +192,11 @@
   function openSheet(id) {
     const record=state.rows.find(r=>Number(r.id)===Number(id));if(!record) return;
     state.sheetId=Number(id);lastFocus=document.activeElement;
-    $('sheetKind').textContent=record.format==='audio'?'ملف صوتي':'ملف فيديو';$('sheetTitle').textContent=record.title || record.filename;
+    $('sheetKind').textContent=record.format==='audio'?'ملف صوتي':(record.format==='gif'?'صورة GIF':'ملف فيديو');$('sheetTitle').textContent=record.title || record.filename;
     $('sheetSource').textContent=record.sourceUrl || 'لم يُحفظ رابط مصدر لهذا الملف';
     const args=[Number(id)],actions=$('sheetActions');actions.replaceChildren(
       sheetAction('تشغيل داخل التطبيق','play','play',args,false,Boolean(record.missing)),
-      sheetAction(record.format==='audio'?'قص جزء من الصوت':'قص المدة من الفيديو','edit','edit',args,false,Boolean(record.missing)),
+      ...(record.format==='gif'?[]:[sheetAction(record.format==='audio'?'قص جزء من الصوت':'قص المدة من الفيديو','edit','edit',args,false,Boolean(record.missing))]),
       ...(record.format==='video' ? [sheetAction('قص إطار الفيديو (Crop)','edit','crop',args,false,Boolean(record.missing))] : []),
       ...(record.missing && record.sourceUrl ? [sheetAction('إعادة تنزيل من الرابط المحفوظ','download','redownloadRestored',args)] : []),
       sheetAction('مشاركة الملف','share','share',args,false,Boolean(record.missing)),
@@ -189,6 +204,8 @@
       sheetAction('الانتقال إلى المصدر','external','sourceAction',[Number(id),'open'],false,!record.sourceUrl),
       sheetAction('مشاركة الرابط','link','sourceAction',[Number(id),'share'],false,!record.sourceUrl),
       sheetAction(record.sourceUrl?'تعديل رابط المصدر':'إضافة رابط المصدر','edit','sourceAction',[Number(id),'edit']),
+      sheetAction(`التصنيف: ${record.category||'عام'} — تعديل`,'tag','editCategory',args),
+      sheetAction('إخفاء الملف في الخزنة بالبصمة','lock','hide',args,false,Boolean(record.missing)),
       sheetAction(record.imported?'إزالة من المكتبة فقط':'حذف / إزالة من المكتبة','trash','requestDelete',args,true));
     $('sheetBackdrop').hidden=false;$('fileSheet').hidden=false;document.body.style.overflow='hidden';
     document.querySelector('.app-shell').setAttribute('aria-hidden','true');
@@ -210,9 +227,25 @@
   $('newLinkButton').addEventListener('click',()=>{invalidateResult();window.scrollTo(0,0);$('urlInput').focus();});
   $('urlInput').addEventListener('input',()=>{invalidateResult();storage.set('draft',$('urlInput').value);});
   $('pasteButton').addEventListener('click',()=>call('paste'));
-  $('downloadButton').addEventListener('click',startDownload);$('formatSelect').addEventListener('change',setFormat);
+  $('downloadButton').addEventListener('click',startDownload);
+  $('formatSelect').addEventListener('change',()=>{setFormat();scheduleAuto();});
+  $('qualitySelect').addEventListener('change',()=>{if($('formatSelect').value==='video')storage.set('quality',$('qualitySelect').value);saveAutoPreference();scheduleAuto();});
+  $('autoDownloadSwitch').checked=storage.get('autoDownload','true')==='true';
+  $('settingsAutoDownload').checked=$('autoDownloadSwitch').checked;
+  function toggleAuto(value) {
+    const enabled=Boolean(value);storage.set('autoDownload',enabled?'true':'false');
+    $('autoDownloadSwitch').checked=enabled;$('settingsAutoDownload').checked=enabled;
+    saveAutoPreference();
+    if(enabled)scheduleAuto();
+    else if(state.video)call('cancelQueuedSource',state.video.url);
+  }
+  $('autoDownloadSwitch').addEventListener('change',()=>toggleAuto($('autoDownloadSwitch').checked));
+  $('settingsAutoDownload').addEventListener('change',()=>toggleAuto($('settingsAutoDownload').checked));
   $('librarySearch').addEventListener('input',()=>{state.query=$('librarySearch').value;state.limit=60;renderLibrary();});
   $('sortSelect').addEventListener('change',()=>{state.sort=$('sortSelect').value;state.limit=60;renderLibrary();});
+  $('categoryFilter').addEventListener('change',()=>{state.category=$('categoryFilter').value;state.limit=60;renderLibrary();});
+  $('vaultButton').addEventListener('click',()=>call('openVault'));
+  $('vaultSettingsButton').addEventListener('click',()=>call('openVault'));
   [['gridButton','grid'],['listButton','list']].forEach(([id,view])=>$(id).addEventListener('click',()=>{state.view=view;storage.set('view',view);renderLibrary();}));
   $('importButton').addEventListener('click',()=>call('importFiles'));$('settingsImport').addEventListener('click',()=>call('importFiles'));
   $('refreshButton').addEventListener('click',()=>{if(call('refreshLibrary')) toast('جاري التحقق من الملفات وتحديث المكتبة…');});
@@ -245,5 +278,9 @@
   applyTheme(state.theme);renderLibrary();renderQueue();
   setTab(storage.get('tab','download'));
   $('previewBanner').hidden=Boolean(window.AndroidNative);
-  if(window.AndroidNative) call('ready');
+  if(window.AndroidNative){
+    const preferred=storage.get('format','video')==='audio'?'audio':'video';
+    call('setAutoPreference',$('autoDownloadSwitch').checked,preferred,preferred==='audio'?'192':storage.get('quality','best'));
+    call('ready');
+  }
 })();
